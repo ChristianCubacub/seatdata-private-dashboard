@@ -5,11 +5,40 @@ import {
   Bar, BarChart, CartesianGrid, ComposedChart, Line,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import type { DashboardData } from "@/lib/types";
-import type { SeatDataSale } from "@/lib/types";
+import type { DashboardData, SeatDataEventSearchResult, SeatDataSale } from "@/lib/types";
 import FullDataView from "./FullDataView";
 
 type DateWindow = 7 | 30 | 90 | "all";
+
+const RECENT_EVENTS_KEY = "seatdata_recent_events";
+const RECENT_EVENTS_LIMIT = 8;
+
+type RecentEvent = {
+  eventId: string;
+  eventName: string;
+  venueName: string;
+  venueCity: string;
+  venueState: string;
+  eventDate: string;
+};
+
+function loadRecentEvents(): RecentEvent[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(RECENT_EVENTS_KEY);
+    return raw ? (JSON.parse(raw) as RecentEvent[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentEvents(events: RecentEvent[]) {
+  try {
+    window.localStorage.setItem(RECENT_EVENTS_KEY, JSON.stringify(events));
+  } catch {
+    // localStorage may be unavailable (e.g. private browsing); safe to ignore.
+  }
+}
 
 const C = {
   amber: "#ffb43d", violet: "#b06cff", teal: "#4dd6c4",
@@ -35,6 +64,17 @@ const compact = (value: number) => new Intl.NumberFormat("en-US", {
 const dateLabel = (value: string) => new Intl.DateTimeFormat("en-US", {
   month: "short", day: "numeric", year: "numeric", timeZone: "UTC",
 }).format(new Date(`${value}T00:00:00Z`));
+const timeLabel = (value?: string) => {
+  if (!value) return "—";
+  const [hoursText, minutesText] = value.split(":");
+  const hours = Number(hoursText);
+  const minutes = Number(minutesText);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return value;
+  const period = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours % 12 === 0 ? 12 : hours % 12;
+  return `${displayHour}:${String(minutes).padStart(2, "0")} ${period}`;
+};
+const locationLabel = (city: string, state: string) => (state ? `${city}, ${state}` : city);
 
 function Kpi({ label, value, note, color }: {
   label: string; value: string; note: string; color: string;
@@ -99,6 +139,21 @@ export default function DashboardPage() {
   const [rawLoading, setRawLoading] = useState(false);
   const [rawError, setRawError] = useState("");
   const [rawAttempt, setRawAttempt] = useState(0);
+  const [recentEvents, setRecentEvents] = useState<RecentEvent[]>([]);
+  const [searchName, setSearchName] = useState("");
+  const [searchVenue, setSearchVenue] = useState("");
+  const [searchCity, setSearchCity] = useState("");
+  const [searchState, setSearchState] = useState("");
+  const [searchDate, setSearchDate] = useState("");
+  const [searchHistorical, setSearchHistorical] = useState(false);
+  const [searchResults, setSearchResults] = useState<SeatDataEventSearchResult[]>([]);
+  const [searchCursor, setSearchCursor] = useState<string | null>(null);
+  const [searchHasMore, setSearchHasMore] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [searchAttempted, setSearchAttempted] = useState(false);
+
+  useEffect(() => { setRecentEvents(loadRecentEvents()); }, []);
 
   useEffect(() => {
     if (view !== "full" || !data || rawEventId === data.eventId) return;
@@ -165,8 +220,62 @@ export default function DashboardPage() {
     globalThis.location.assign("/login");
   }
 
-  async function importEvent() {
-    const id = eventId.trim();
+  function rememberRecentEvent(result: SeatDataEventSearchResult) {
+    const entry: RecentEvent = {
+      eventId: String(result.event_id),
+      eventName: result.event_name,
+      venueName: result.venue_name,
+      venueCity: result.venue_city,
+      venueState: result.venue_state,
+      eventDate: result.event_date,
+    };
+    setRecentEvents((current) => {
+      const next = [entry, ...current.filter((item) => item.eventId !== entry.eventId)].slice(0, RECENT_EVENTS_LIMIT);
+      saveRecentEvents(next);
+      return next;
+    });
+  }
+
+  async function runSearch(cursor: string | null = null) {
+    setSearchLoading(true); setSearchError(""); setSearchAttempted(true);
+    try {
+      const params = new URLSearchParams();
+      if (searchName.trim()) params.set("event_name", searchName.trim());
+      if (searchVenue.trim()) params.set("venue_name", searchVenue.trim());
+      if (searchCity.trim()) params.set("venue_city", searchCity.trim());
+      if (searchState.trim()) params.set("venue_state", searchState.trim());
+      if (searchDate.trim()) params.set("event_date", searchDate.trim());
+      if (searchHistorical) params.set("historical", "true");
+      params.set("limit", "25");
+      if (cursor) params.set("starting_after", cursor);
+
+      const response = await fetch(`/api/events/search?${params.toString()}`, { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Search failed.");
+
+      setSearchResults((current) => (cursor ? [...current, ...result.data] : result.data));
+      setSearchHasMore(Boolean(result.has_more));
+      setSearchCursor(result.next_cursor ?? null);
+    } catch (error) {
+      setSearchError(error instanceof Error ? error.message : "Search failed.");
+    } finally {
+      setSearchLoading(false);
+    }
+  }
+
+  function selectSearchResult(result: SeatDataEventSearchResult) {
+    const id = String(result.event_id);
+    setEventId(id);
+    rememberRecentEvent(result);
+    void importEvent(id);
+  }
+
+  function selectRecentEvent(entry: RecentEvent) {
+    setEventId(entry.eventId);
+    void importEvent(entry.eventId);
+  }
+
+  async function importEvent(id = eventId.trim()) {
     if (!id) { setStatus("Enter a SeatData event ID first."); return; }
     setLoading(true); setStatus("Importing from SeatData...");
     try {
@@ -211,7 +320,7 @@ export default function DashboardPage() {
               />
             </label>
             <div className="flex flex-wrap gap-2">
-              <button onClick={importEvent} disabled={loading} className="rounded-lg border border-[#ffb43d] bg-[#ffb43d] px-4 py-2.5 text-xs font-bold text-[#241800] transition hover:bg-[#ffc35f] disabled:cursor-not-allowed disabled:opacity-50">
+              <button onClick={() => void importEvent()} disabled={loading} className="rounded-lg border border-[#ffb43d] bg-[#ffb43d] px-4 py-2.5 text-xs font-bold text-[#241800] transition hover:bg-[#ffc35f] disabled:cursor-not-allowed disabled:opacity-50">
                 {loading ? "Working..." : "Import / Refresh"}
               </button>
               <button onClick={() => loadDashboard()} disabled={loading} className="rounded-lg border border-white/10 px-4 py-2.5 text-xs font-semibold text-[#9c96b3] transition hover:border-[#4dd6c4] hover:text-white disabled:opacity-50">
@@ -391,10 +500,118 @@ export default function DashboardPage() {
             </footer>
           </>
         ) : (
-          <section className="rounded-[14px] border border-dashed border-white/10 bg-[#1b1830]/70 px-6 py-14 text-center">
-            <p className="font-[Impact,Haettenschweiler,'Arial_Narrow_Bold',sans-serif] text-3xl uppercase tracking-wide text-[#b06cff]">Admit one event</p>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-[#9c96b3]">Enter a SeatData event ID to import fresh private records, or load an event already cached in private storage.</p>
-          </section>
+          <>
+            <section className="rounded-[14px] border border-white/10 bg-[#1b1830] p-4 sm:p-[18px]">
+              <p className="text-[10px] font-bold uppercase tracking-[.16em] text-[#9c96b3]">Search SeatData events</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                <input
+                  value={searchName}
+                  onChange={(event) => setSearchName(event.target.value)}
+                  onKeyDown={(event) => { if (event.key === "Enter" && !searchLoading) void runSearch(); }}
+                  placeholder="Event name"
+                  className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff] lg:col-span-2"
+                />
+                <input
+                  value={searchVenue}
+                  onChange={(event) => setSearchVenue(event.target.value)}
+                  onKeyDown={(event) => { if (event.key === "Enter" && !searchLoading) void runSearch(); }}
+                  placeholder="Venue"
+                  className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]"
+                />
+                <input
+                  value={searchCity}
+                  onChange={(event) => setSearchCity(event.target.value)}
+                  onKeyDown={(event) => { if (event.key === "Enter" && !searchLoading) void runSearch(); }}
+                  placeholder="City"
+                  className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]"
+                />
+                <input
+                  value={searchState}
+                  onChange={(event) => setSearchState(event.target.value)}
+                  onKeyDown={(event) => { if (event.key === "Enter" && !searchLoading) void runSearch(); }}
+                  placeholder="State"
+                  className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]"
+                />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <input
+                  value={searchDate}
+                  onChange={(event) => setSearchDate(event.target.value)}
+                  onKeyDown={(event) => { if (event.key === "Enter" && !searchLoading) void runSearch(); }}
+                  placeholder="Date (e.g. 2026 or 2026-07)"
+                  className="w-56 rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]"
+                />
+                <label className="flex cursor-pointer items-center gap-2 text-xs text-[#9c96b3]">
+                  <input type="checkbox" checked={searchHistorical} onChange={(event) => setSearchHistorical(event.target.checked)} className="h-4 w-4 accent-[#4dd6c4]" />
+                  Include past events
+                </label>
+                <button onClick={() => void runSearch()} disabled={searchLoading} className="ml-auto rounded-lg border border-[#ffb43d] bg-[#ffb43d] px-4 py-2 text-xs font-bold text-[#241800] transition hover:bg-[#ffc35f] disabled:cursor-not-allowed disabled:opacity-50">
+                  {searchLoading ? "Searching..." : "Search events"}
+                </button>
+              </div>
+              {searchError && <p className="mt-3 border-t border-dashed border-white/10 pt-3 font-mono text-[11px] text-[#ff5d8f]">{searchError}</p>}
+            </section>
+
+            {searchAttempted && (
+              <Panel title="Search results" hint={searchResults.length ? `${searchResults.length} event${searchResults.length === 1 ? "" : "s"} · click a row to import` : undefined}>
+                {searchResults.length ? (
+                  <>
+                    <div className="mt-4 max-h-[440px] overflow-auto">
+                      <table className="w-full border-collapse text-left text-xs">
+                        <thead className="sticky top-0 z-10 bg-[#1b1830]">
+                          <tr className="text-[10px] uppercase tracking-[.1em] text-[#9c96b3]">
+                            <th className="border-b border-white/10 px-2 py-2 font-semibold">Name</th>
+                            <th className="border-b border-white/10 px-2 py-2 font-semibold">Date</th>
+                            <th className="border-b border-white/10 px-2 py-2 font-semibold">Time</th>
+                            <th className="border-b border-white/10 px-2 py-2 font-semibold">Venue</th>
+                            <th className="border-b border-white/10 px-2 py-2 font-semibold">Location</th>
+                            <th className="border-b border-white/10 px-2 py-2 text-right font-semibold">Days tracked</th>
+                          </tr>
+                        </thead>
+                        <tbody className="font-mono">
+                          {searchResults.map((result) => (
+                            <tr key={result.event_id} onClick={() => selectSearchResult(result)} className="cursor-pointer hover:bg-white/[.03]">
+                              <td className="border-b border-white/[.045] px-2 py-2 font-sans text-[#f4f1f7]">{result.event_name}</td>
+                              <td className="whitespace-nowrap border-b border-white/[.045] px-2 py-2">{dateLabel(result.event_date)}</td>
+                              <td className="whitespace-nowrap border-b border-white/[.045] px-2 py-2">{timeLabel(result.event_time)}</td>
+                              <td className="border-b border-white/[.045] px-2 py-2 font-sans">{result.venue_name}</td>
+                              <td className="whitespace-nowrap border-b border-white/[.045] px-2 py-2 font-sans">{locationLabel(result.venue_city, result.venue_state)}</td>
+                              <td className="border-b border-white/[.045] px-2 py-2 text-right">{result.days_on_seatdata ?? "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {searchHasMore && (
+                      <button onClick={() => void runSearch(searchCursor)} disabled={searchLoading} className="mt-3 rounded-lg border border-white/10 px-3 py-1.5 text-xs text-[#9c96b3] transition hover:border-[#4dd6c4] hover:text-white disabled:opacity-50">
+                        {searchLoading ? "Loading..." : "Load more"}
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <p className="mt-3 text-sm text-[#9c96b3]">No events matched that search.</p>
+                )}
+              </Panel>
+            )}
+
+            {recentEvents.length > 0 && (
+              <Panel title="Recently viewed" hint="click to reload">
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {recentEvents.map((entry) => (
+                    <button key={entry.eventId} onClick={() => selectRecentEvent(entry)} className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-left text-xs transition hover:border-[#b06cff]">
+                      <span className="block font-semibold text-[#f4f1f7]">{entry.eventName}</span>
+                      <span className="mt-0.5 block text-[10px] text-[#9c96b3]">{entry.venueName} · {locationLabel(entry.venueCity, entry.venueState)}</span>
+                    </button>
+                  ))}
+                </div>
+              </Panel>
+            )}
+
+            <section className="rounded-[14px] border border-dashed border-white/10 bg-[#1b1830]/70 px-6 py-14 text-center">
+              <p className="font-[Impact,Haettenschweiler,'Arial_Narrow_Bold',sans-serif] text-3xl uppercase tracking-wide text-[#b06cff]">Admit one event</p>
+              <p className="mx-auto mt-3 max-w-xl text-sm text-[#9c96b3]">Search for an event above, pick a recent one, or enter a SeatData event ID directly.</p>
+            </section>
+          </>
         )}
       </div>
     </main>
