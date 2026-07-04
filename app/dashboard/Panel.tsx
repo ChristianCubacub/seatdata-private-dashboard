@@ -60,15 +60,14 @@ export default function Panel({
       watermark.style.cssText = "margin-top:1rem;text-align:center;font-family:ui-monospace,monospace;font-size:11px;color:#9c96b3;";
       clone.appendChild(watermark);
 
-      clone.style.position = "fixed";
-      clone.style.top = "0";
-      clone.style.left = "-99999px";
-      clone.style.zIndex = "-1";
       clone.style.margin = "0";
       clone.style.width = `${source.getBoundingClientRect().width}px`;
       clone.style.padding = "2.5rem";
 
-      document.body.appendChild(clone);
+      const wrapper = document.createElement("div");
+      wrapper.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;overflow:hidden;pointer-events:none;";
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
       try {
         const { toPng } = await import("html-to-image");
         const dataUrl = await toPng(clone, { backgroundColor: "#1b1830", pixelRatio: 2 });
@@ -77,7 +76,7 @@ export default function Panel({
         link.download = `${slugify(title)}.png`;
         link.click();
       } finally {
-        document.body.removeChild(clone);
+        document.body.removeChild(wrapper);
       }
     } catch (error) {
       console.error(error);
