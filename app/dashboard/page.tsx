@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Bar, BarChart, CartesianGrid, ComposedChart, Line,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import type { DashboardData } from "@/lib/types";
+import type { SeatDataSale } from "@/lib/types";
+import FullDataView from "./FullDataView";
 
 type DateWindow = 7 | 30 | 90 | "all";
 
@@ -91,6 +93,42 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [window, setWindow] = useState<DateWindow>("all");
   const [zones, setZones] = useState<Set<string>>(new Set());
+  const [view, setView] = useState<"public" | "full">("public");
+  const [rawSales, setRawSales] = useState<SeatDataSale[]>([]);
+  const [rawEventId, setRawEventId] = useState("");
+  const [rawLoading, setRawLoading] = useState(false);
+  const [rawError, setRawError] = useState("");
+  const [rawAttempt, setRawAttempt] = useState(0);
+
+  useEffect(() => {
+    if (view !== "full" || !data || rawEventId === data.eventId) return;
+    const controller = new AbortController();
+    fetch("/api/dashboard/event/" + encodeURIComponent(data.eventId) + "/raw", {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? "Could not load raw data.");
+        if (!Array.isArray(result)) throw new Error("Raw data response was not an array.");
+        setRawSales(result);
+        setRawEventId(data.eventId);
+      })
+      .catch((error) => {
+        if (error instanceof Error && error.name !== "AbortError") setRawError(error.message);
+      })
+      .finally(() => setRawLoading(false));
+    return () => controller.abort();
+  }, [view, data, rawEventId, rawAttempt]);
+
+  function openFullView() {
+    setView("full");
+    if (data && rawEventId !== data.eventId) {
+      setRawLoading(true);
+      setRawError("");
+      setRawAttempt((current) => current + 1);
+    }
+  }
 
   const daily = useMemo(() => {
     const rows = data?.charts.salesOverTime ?? [];
@@ -148,7 +186,7 @@ export default function DashboardPage() {
       const response = await fetch(`/api/dashboard/event/${encodeURIComponent(id)}`, { cache: "no-store" });
       const result = await response.json();
       if (!response.ok) { setStatus(result.error ?? "Could not load dashboard data."); setData(null); return; }
-      setData(result); resetFilters(); setStatus("Dashboard loaded.");
+      setData(result); setRawSales([]); setRawEventId(""); setView("public"); resetFilters(); setStatus("Dashboard loaded.");
     } catch { setStatus("Dashboard failed to load."); setData(null); }
     finally { setLoading(false); }
   }
@@ -185,7 +223,22 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {data ? (
+        {data && (
+          <nav className="flex overflow-hidden rounded-[14px] border border-white/10 bg-[#1b1830] p-1" aria-label="Dashboard data views">
+            <button onClick={() => setView("public")} className={"flex-1 rounded-[10px] px-4 py-2.5 text-xs font-bold uppercase tracking-[.14em] transition " + (view === "public" ? "bg-[#b06cff] text-[#160f24]" : "text-[#9c96b3] hover:text-white")}>Public view</button>
+            <button onClick={openFullView} className={"flex-1 rounded-[10px] px-4 py-2.5 text-xs font-bold uppercase tracking-[.14em] transition " + (view === "full" ? "bg-[#ffb43d] text-[#241800]" : "text-[#9c96b3] hover:text-white")}>Full data view</button>
+          </nav>
+        )}
+
+        {data && view === "full" ? (
+          rawLoading ? (
+            <section className="rounded-[14px] border border-white/10 bg-[#1b1830] px-6 py-16 text-center font-mono text-sm text-[#9c96b3]">Loading authenticated raw data…</section>
+          ) : rawError ? (
+            <section className="rounded-[14px] border border-[#ff5d8f]/40 bg-[#1b1830] px-6 py-12 text-center"><p className="text-[#ff5d8f]">{rawError}</p><button onClick={openFullView} className="mt-4 rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9c96b3]">Retry</button></section>
+          ) : rawEventId === data.eventId ? (
+            <FullDataView rawSales={rawSales} />
+          ) : null
+        ) : data ? (
           <>
             <section className="grid gap-4 rounded-[14px] border border-white/10 bg-[#1b1830] p-4 sm:p-[18px]">
               <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
