@@ -55,9 +55,21 @@ const median = (values: number[]) => {
 };
 const day = 86_400_000;
 const inputDate = (time: number) => new Date(time).toISOString().slice(0, 10);
-const displayDate = (time: number) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "2-digit" }).format(new Date(time));
-const displayClock = (time: number) => new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(new Date(time));
-const displayTime = (time: number) => `${displayDate(time)} ${displayClock(time)}`;
+const VENUE_TIME_ZONES = [
+  { value: "America/New_York", label: "Eastern" },
+  { value: "America/Chicago", label: "Central" },
+  { value: "America/Denver", label: "Mountain" },
+  { value: "America/Los_Angeles", label: "Pacific" },
+];
+const displayDate = (time: number, timeZone: string) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "2-digit", timeZone }).format(new Date(time));
+const displayClock = (time: number, timeZone: string) => new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone }).format(new Date(time));
+const displayTime = (time: number, timeZone: string) => `${displayDate(time, timeZone)} ${displayClock(time, timeZone)}`;
+const zonedYMD = (time: number, timeZone: string) => {
+  const map = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(time)).map((part) => [part.type, part.value])
+  );
+  return { year: Number(map.year), month: Number(map.month), day: Number(map.day) };
+};
 
 function Segments<T extends string | number>({ values, value, onChange, labels }: {
   values: readonly T[]; value: T; onChange: (value: T) => void; labels?: Partial<Record<T, string>>;
@@ -106,6 +118,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
   const [capOutliers, setCapOutliers] = useState(true);
   const [outlierCutoff, setOutlierCutoff] = useState(3000);
   const [granularity, setGranularity] = useState<Granularity>("day");
+  const [venueTimeZone, setVenueTimeZone] = useState<string>(VENUE_TIME_ZONES[0].value);
   const [series, setSeries] = useState({ tickets: true, median: true, getIn: true });
   const [recentSort, setRecentSort] = useState<{ key: SortKey; direction: 1 | -1 }>({ key: "timestamp", direction: -1 });
   const [histMode, setHistMode] = useState<HistogramMode>("bars");
@@ -137,15 +150,15 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
   }), [rows, zones, includeZero, capOutliers, outlierCutoff, windowValue, maxTime]);
 
   const bucketKey = useCallback((time: number) => {
-    const value = new Date(time);
-    if (granularity === "month") return `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, "0")}-01`;
+    const { year, month, day: dayOfMonth } = zonedYMD(time, venueTimeZone);
+    if (granularity === "month") return `${year}-${String(month).padStart(2, "0")}-01`;
+    const asUtc = new Date(Date.UTC(year, month - 1, dayOfMonth));
     if (granularity === "week") {
-      const copy = new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
-      copy.setUTCDate(copy.getUTCDate() - ((copy.getUTCDay() + 6) % 7));
-      return copy.toISOString().slice(0, 10);
+      asUtc.setUTCDate(asUtc.getUTCDate() - ((asUtc.getUTCDay() + 6) % 7));
+      return asUtc.toISOString().slice(0, 10);
     }
-    return value.toISOString().slice(0, 10);
-  }, [granularity]);
+    return asUtc.toISOString().slice(0, 10);
+  }, [granularity, venueTimeZone]);
 
   const timeSeries = useMemo(() => {
     const map = new Map<string, SaleRow[]>();
@@ -357,6 +370,18 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
               />
             </div>
           </div>
+          <label className="flex items-center gap-2 text-xs text-[#9c96b3]">
+            Venue time zone
+            <select
+              value={venueTimeZone}
+              onChange={(event) => setVenueTimeZone(event.target.value)}
+              className="rounded-lg border border-white/10 bg-[#221d3a] px-2 py-1.5 text-xs text-[#f4f1f7] outline-none focus:border-[#b06cff]"
+            >
+              {VENUE_TIME_ZONES.map((zone) => (
+                <option key={zone.value} value={zone.value}>{zone.label}</option>
+              ))}
+            </select>
+          </label>
           <button onClick={reset} className="ml-auto rounded-lg border border-white/10 px-3 py-1.5 text-xs text-[#9c96b3] hover:border-[#ffb43d] hover:text-white">Reset filters</button>
         </div>
       </section>
@@ -577,7 +602,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                 </thead>
                 <tbody className="font-mono">
                   {explorerRows.slice(0, 500).map((row, index) => <tr key={row.timestamp + "-explorer-" + index} className="hover:bg-white/[.03]">
-                    <td className={`whitespace-nowrap border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}>{displayTime(row.timestamp)}</td>
+                    <td className={`whitespace-nowrap border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}>{displayTime(row.timestamp, venueTimeZone)}</td>
                     <td className={`border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}><span className={`rounded-full bg-[#221d3a] px-2 py-1 font-sans text-[#b06cff] ${maximized ? "text-base" : "text-[10px]"}`}>{row.zone}</span></td>
                     <td className={`border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}>{row.section}</td><td className={`border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}>{row.row}</td>
                     <td className={`border-b border-white/[.045] px-2 py-2 text-right ${maximized ? "text-lg" : "text-xs"}`}>{row.quantity}</td><td className={`border-b border-white/[.045] px-2 py-2 text-right ${maximized ? "text-lg" : "text-xs"} ` + (row.price > outlierCutoff ? "font-bold text-[#ff5d8f]" : "text-[#ffb43d]")}>{money(row.price)}</td>
@@ -600,7 +625,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                 </thead>
                 <tbody className="font-mono">
                   {recentRows.slice(0, 250).map((row, index) => <tr key={row.timestamp + "-" + index} className="hover:bg-white/[.03]">
-                    <td className={`whitespace-nowrap border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}>{displayTime(row.timestamp)}</td>
+                    <td className={`whitespace-nowrap border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}>{displayTime(row.timestamp, venueTimeZone)}</td>
                     <td className={`border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}><span className={`rounded-full bg-[#221d3a] px-2 py-1 font-sans text-[#b06cff] ${maximized ? "text-base" : "text-[10px]"}`}>{row.zone}</span></td>
                     <td className={`border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}>{row.section}</td><td className={`border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}>{row.row}</td>
                     <td className={`border-b border-white/[.045] px-2 py-2 text-right ${maximized ? "text-lg" : "text-xs"}`}>{row.quantity}</td><td className={`border-b border-white/[.045] px-2 py-2 text-right text-[#ffb43d] ${maximized ? "text-lg" : "text-xs"}`}>{money(row.price)}</td>
