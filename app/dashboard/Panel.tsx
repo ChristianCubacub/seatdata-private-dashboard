@@ -66,7 +66,7 @@ export default function Panel({
 
   return (
     <section ref={nodeRef} className={maximized ? "fixed inset-0 z-[999] overflow-auto bg-[#12101c] p-6 sm:p-10" : className}>
-      <div className={`flex gap-2 ${exporting ? "flex-col items-center text-center" : "flex-wrap items-start justify-between"}`}>
+      <div className={`flex gap-2 ${(maximized || exporting) ? "flex-col items-center text-center" : "flex-wrap items-start justify-between"}`}>
         <div>
           <h2
             onClick={() => setMaximized((current) => !current)}
@@ -77,7 +77,7 @@ export default function Panel({
           </h2>
           {hint && <p className={`mt-1 text-[#9c96b3] ${maximized ? "text-sm" : "text-[11px]"}`}>{hint}</p>}
         </div>
-        <div className={`flex flex-wrap items-center gap-2 ${exporting ? "justify-center" : ""}`}>
+        <div className={`flex flex-wrap items-center gap-2 ${(maximized || exporting) ? "justify-center" : ""}`}>
           {controls}
           <div className="flex items-center gap-2" data-export-ignore="true">
             <button
