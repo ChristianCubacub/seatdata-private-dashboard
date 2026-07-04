@@ -5,6 +5,7 @@ import { flushSync } from "react-dom";
 
 const DEFAULT_CLASSNAME =
   "min-w-0 rounded-[14px] border border-white/10 bg-[#1b1830] p-4 shadow-[0_18px_50px_rgba(0,0,0,.15)] sm:p-[18px]";
+const MAXIMIZE_SCALE = 1.4;
 
 function slugify(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "chart";
@@ -20,7 +21,7 @@ export default function Panel({
   title: string;
   hint?: string;
   controls?: ReactNode;
-  children: ReactNode | ((maximized: boolean) => ReactNode);
+  children: ReactNode;
   className?: string;
 }) {
   const [maximized, setMaximized] = useState(false);
@@ -99,7 +100,11 @@ export default function Panel({
           </div>
         </div>
       </div>
-      {typeof children === "function" ? children(maximized) : children}
+      <div
+        style={maximized ? { transform: `scale(${MAXIMIZE_SCALE})`, transformOrigin: "top left", width: `${(100 / MAXIMIZE_SCALE).toFixed(3)}%` } : undefined}
+      >
+        {children}
+      </div>
     </section>
   );
 }
