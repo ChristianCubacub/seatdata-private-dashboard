@@ -113,6 +113,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
   const [windowValue, setWindowValue] = useState<WindowValue>("all");
   const [includeZero, setIncludeZero] = useState(true);
   const [capOutliers, setCapOutliers] = useState(true);
+  const [outlierCutoff, setOutlierCutoff] = useState(3000);
   const [granularity, setGranularity] = useState<Granularity>("day");
   const [series, setSeries] = useState({ tickets: true, median: true, getIn: true });
   const [recentSort, setRecentSort] = useState<{ key: SortKey; direction: 1 | -1 }>({ key: "timestamp", direction: -1 });
@@ -139,10 +140,10 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
   const filtered = useMemo(() => rows.filter((row) => {
     if (zones.size && !zones.has(row.zone)) return false;
     if (!includeZero && row.quantity <= 0) return false;
-    if (capOutliers && row.price > 2500) return false;
+    if (capOutliers && row.price > outlierCutoff) return false;
     if (windowValue !== "all" && row.timestamp < maxTime - windowValue * day) return false;
     return true;
-  }), [rows, zones, includeZero, capOutliers, windowValue, maxTime]);
+  }), [rows, zones, includeZero, capOutliers, outlierCutoff, windowValue, maxTime]);
 
   const bucketKey = useCallback((time: number) => {
     const value = new Date(time);
@@ -245,7 +246,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
     const base = rows.filter((row) => {
       if (zones.size && !zones.has(row.zone)) return false;
       if (!includeZero && row.quantity <= 0) return false;
-      if (capOutliers && row.price > 2500) return false;
+      if (capOutliers && row.price > outlierCutoff) return false;
       if (trendRespectWindow && windowValue !== "all" && row.timestamp < maxTime - windowValue * day) return false;
       return true;
     });
@@ -261,7 +262,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
         return { days, now, before, delta: trendMode === "pct" ? (before ? ((now - before) / before) * 100 : 0) : now - before, available: current.length > 0 && prior.length > 0 };
       }),
     }));
-  }, [rows, zones, includeZero, capOutliers, trendRespectWindow, windowValue, maxTime, trendAsOf, customWindow, trendMode]);
+  }, [rows, zones, includeZero, capOutliers, outlierCutoff, trendRespectWindow, windowValue, maxTime, trendAsOf, customWindow, trendMode]);
 
   function toggleZone(zone: string) {
     setZones((current) => {
@@ -274,7 +275,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
     setter((current) => ({ key, direction: current.key === key ? (current.direction * -1) as 1 | -1 : key === "timestamp" ? -1 : 1 }));
   }
   function reset() {
-    setZones(new Set()); setWindowValue("all"); setIncludeZero(true); setCapOutliers(true); setGranularity("day");
+    setZones(new Set()); setWindowValue("all"); setIncludeZero(true); setCapOutliers(true); setOutlierCutoff(3000); setGranularity("day");
     setSeries({ tickets: true, median: true, getIn: true }); setHistMode("bars"); setBinSize("auto");
     setShowThreshold(false); setByZone(true); setShowStats(false); setTrendRespectWindow(false);
     setIsolatedZone(null);
@@ -298,7 +299,22 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
         </div>
         <div className="flex flex-wrap items-center gap-5 border-t border-dashed border-white/10 pt-4">
           <Toggle checked={includeZero} onChange={setIncludeZero} label="Include Qty = 0 rows" />
-          <Toggle checked={capOutliers} onChange={setCapOutliers} label="Cap outliers over $2,500" />
+          <div className="flex items-center gap-2">
+            <Toggle checked={capOutliers} onChange={setCapOutliers} label="Cap outliers over" />
+            <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-[#221d3a] px-2 py-1">
+              <span className="text-xs text-[#9c96b3]">$</span>
+              <input
+                type="number"
+                min="0"
+                value={outlierCutoff}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setOutlierCutoff(Number.isFinite(value) && value >= 0 ? value : 0);
+                }}
+                className="w-20 bg-transparent text-xs outline-none"
+              />
+            </div>
+          </div>
           <button onClick={reset} className="ml-auto rounded-lg border border-white/10 px-3 py-1.5 text-xs text-[#9c96b3] hover:border-[#ffb43d] hover:text-white">Reset filters</button>
         </div>
       </section>
@@ -467,7 +483,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                 <td className="whitespace-nowrap border-b border-white/[.045] px-2 py-2">{displayTime(row.timestamp)}</td>
                 <td className="border-b border-white/[.045] px-2 py-2"><span className="rounded-full bg-[#221d3a] px-2 py-1 font-sans text-[10px] text-[#b06cff]">{row.zone}</span></td>
                 <td className="border-b border-white/[.045] px-2 py-2">{row.section}</td><td className="border-b border-white/[.045] px-2 py-2">{row.row}</td>
-                <td className="border-b border-white/[.045] px-2 py-2 text-right">{row.quantity}</td><td className={"border-b border-white/[.045] px-2 py-2 text-right " + (row.price > 2500 ? "font-bold text-[#ff5d8f]" : "text-[#ffb43d]")}>{money(row.price)}</td>
+                <td className="border-b border-white/[.045] px-2 py-2 text-right">{row.quantity}</td><td className={"border-b border-white/[.045] px-2 py-2 text-right " + (row.price > outlierCutoff ? "font-bold text-[#ff5d8f]" : "text-[#ffb43d]")}>{money(row.price)}</td>
               </tr>)}
             </tbody>
           </table>
