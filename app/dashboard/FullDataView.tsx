@@ -123,7 +123,11 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
   const [byZone, setByZone] = useState(true);
   const [isolatedZone, setIsolatedZone] = useState<string | null>(null);
   const [showStats, setShowStats] = useState(false);
-  const [search, setSearch] = useState("");
+  const [searchZone, setSearchZone] = useState("");
+  const [searchSection, setSearchSection] = useState("");
+  const [searchRow, setSearchRow] = useState("");
+  const [minQuantity, setMinQuantity] = useState("");
+  const [maxQuantity, setMaxQuantity] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [explorerSort, setExplorerSort] = useState<{ key: SortKey; direction: 1 | -1 }>({ key: "price", direction: -1 });
@@ -218,16 +222,24 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
   });
   const recentRows = useMemo(() => sortRows(filtered, recentSort), [filtered, recentSort]);
   const explorerRows = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const zoneQuery = searchZone.trim().toLowerCase();
+    const sectionQuery = searchSection.trim().toLowerCase();
+    const rowQuery = searchRow.trim().toLowerCase();
+    const minQty = minQuantity === "" ? null : Number(minQuantity);
+    const maxQty = maxQuantity === "" ? null : Number(maxQuantity);
     const min = minPrice === "" ? null : Number(minPrice);
     const max = maxPrice === "" ? null : Number(maxPrice);
     return sortRows(rows.filter((row) => {
-      if (query && !`${row.zone} ${row.section} ${row.row}`.toLowerCase().includes(query)) return false;
+      if (zoneQuery && !row.zone.toLowerCase().includes(zoneQuery)) return false;
+      if (sectionQuery && !row.section.toLowerCase().includes(sectionQuery)) return false;
+      if (rowQuery && !row.row.toLowerCase().includes(rowQuery)) return false;
+      if (minQty !== null && row.quantity < minQty) return false;
+      if (maxQty !== null && row.quantity > maxQty) return false;
       if (min !== null && row.price < min) return false;
       if (max !== null && row.price > max) return false;
       return true;
     }), explorerSort);
-  }, [rows, search, minPrice, maxPrice, explorerSort]);
+  }, [rows, searchZone, searchSection, searchRow, minQuantity, maxQuantity, minPrice, maxPrice, explorerSort]);
 
   const trendRows = useMemo(() => {
     const base = rows.filter((row) => {
@@ -408,12 +420,42 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
       </div>
 
       <Panel title="All entries · explorer" hint={number(explorerRows.length) + " matching raw rows"}>
-        <p className="mt-1 text-[11px] text-[#9c96b3]">Independent of the top filters. Search a zone, section, or row, or constrain the per-ticket price.</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search zone, section, or row…" className="min-w-[220px] flex-1 rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
-          <input value={minPrice} onChange={(event) => setMinPrice(event.target.value)} type="number" placeholder="Min $" className="w-28 rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
-          <input value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} type="number" placeholder="Max $" className="w-28 rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
-          <button onClick={() => { setSearch(""); setMinPrice(""); setMaxPrice(""); }} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9c96b3] hover:border-[#ffb43d] hover:text-white">Clear</button>
+        <p className="mt-1 text-[11px] text-[#9c96b3]">Independent of the top filters. Filter by zone, section, row, quantity, or price.</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Zone</span>
+            <input value={searchZone} onChange={(event) => setSearchZone(event.target.value)} placeholder="Zone" className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Section</span>
+            <input value={searchSection} onChange={(event) => setSearchSection(event.target.value)} placeholder="Section" className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Row</span>
+            <input value={searchRow} onChange={(event) => setSearchRow(event.target.value)} placeholder="Row" className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+          </label>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Quantity</span>
+            <div className="flex gap-2">
+              <input value={minQuantity} onChange={(event) => setMinQuantity(event.target.value)} type="number" placeholder="Min" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+              <input value={maxQuantity} onChange={(event) => setMaxQuantity(event.target.value)} type="number" placeholder="Max" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Price</span>
+            <div className="flex gap-2">
+              <input value={minPrice} onChange={(event) => setMinPrice(event.target.value)} type="number" placeholder="Min" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+              <input value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} type="number" placeholder="Max" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+            </div>
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={() => { setSearchZone(""); setSearchSection(""); setSearchRow(""); setMinQuantity(""); setMaxQuantity(""); setMinPrice(""); setMaxPrice(""); }}
+              className="rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9c96b3] hover:border-[#ffb43d] hover:text-white"
+            >
+              Clear
+            </button>
+          </div>
         </div>
         <div className="mt-3 max-h-[520px] overflow-auto border-t border-white/10">
           <table className="w-full border-collapse text-left text-xs">
