@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Bar, BarChart, CartesianGrid, ComposedChart, Line, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import type { SeatDataSale } from "@/lib/types";
+import Panel from "./Panel";
 
 type WindowValue = 1 | 3 | 14 | 30 | 90 | 180 | "all";
 type Granularity = "day" | "week" | "month";
@@ -55,18 +56,6 @@ const inputDate = (time: number) => new Date(time).toISOString().slice(0, 10);
 const displayDate = (time: number) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "2-digit" }).format(new Date(time));
 const displayClock = (time: number) => new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(new Date(time));
 const displayTime = (time: number) => `${displayDate(time)} ${displayClock(time)}`;
-
-function Panel({ title, hint, controls, children }: { title: string; hint?: string; controls?: ReactNode; children: ReactNode }) {
-  return (
-    <section className="min-w-0 rounded-[14px] border border-white/10 bg-[#1b1830] p-[18px] shadow-[0_18px_50px_rgba(0,0,0,.15)]">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div><h2 className="text-sm font-bold tracking-[.02em]">{title}</h2>{hint && <p className="mt-1 text-[11px] text-[#9c96b3]">{hint}</p>}</div>
-        {controls}
-      </div>
-      {children}
-    </section>
-  );
-}
 
 function Segments<T extends string | number>({ values, value, onChange, labels }: {
   values: readonly T[]; value: T; onChange: (value: T) => void; labels?: Partial<Record<T, string>>;

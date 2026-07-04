@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bar, BarChart, CartesianGrid, ComposedChart, Line,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import type { DashboardData, SeatDataEventSearchResult, SeatDataSale } from "@/lib/types";
 import FullDataView from "./FullDataView";
+import Panel from "./Panel";
 
 type DateWindow = 7 | 30 | 90 | "all";
 
@@ -85,18 +86,6 @@ function Kpi({ label, value, note, color }: {
       <p className="mt-2 font-mono text-[clamp(1.35rem,2.4vw,1.85rem)] font-bold leading-none" style={{ color }}>{value}</p>
       <p className="mt-4 border-t border-dashed border-white/10 pt-3 font-mono text-[10px] text-[#9c96b3]">{note}</p>
     </article>
-  );
-}
-
-function Panel({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
-  return (
-    <section className="rounded-[14px] border border-white/10 bg-[#1b1830] p-4 shadow-[0_18px_50px_rgba(0,0,0,.15)] sm:p-[18px]">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <h2 className="text-sm font-bold tracking-[.02em]">{title}</h2>
-        {hint && <p className="text-[11px] text-[#9c96b3]">{hint}</p>}
-      </div>
-      {children}
-    </section>
   );
 }
 
