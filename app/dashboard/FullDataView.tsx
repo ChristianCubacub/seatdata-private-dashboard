@@ -179,7 +179,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
   const maxZoneSales = Math.max(1, ...sortedZoneStats.map((entry) => entry.sales));
   const minZoneSales = sortedZoneStats.length ? Math.min(...sortedZoneStats.map((entry) => entry.sales)) : 0;
 
-  const sectionStats = useMemo(() => {
+  const sectionStatsAll = useMemo(() => {
     const map = new Map<string, number>();
     for (const row of filtered) {
       map.set(row.section, (map.get(row.section) ?? 0) + row.quantity);
@@ -187,9 +187,14 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
     return [...map.entries()]
       .map(([section, quantity]) => ({ section, quantity }))
       .filter((entry) => entry.quantity > 0)
-      .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, 12);
+      .sort((a, b) => b.quantity - a.quantity);
   }, [filtered]);
+
+  const [sectionLimit, setSectionLimit] = useState<10 | 15 | 20 | 30 | "all">(10);
+  const sectionStats = useMemo(
+    () => (sectionLimit === "all" ? sectionStatsAll : sectionStatsAll.slice(0, sectionLimit)),
+    [sectionStatsAll, sectionLimit]
+  );
 
   const histogramZones = useMemo(() => {
     const salesByZone = new Map(zoneStats.map((entry) => [entry.zone, entry.sales]));
@@ -418,20 +423,29 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Sections by quantity" hint="top sections · sum of tickets sold">
-          {(maximized) => (
-            <div className={maximized ? "mt-4 h-[70vh]" : "mt-4 h-[320px]"}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={sectionStats} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
-                  <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
-                  <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={number} />
-                  <YAxis type="category" dataKey="section" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-                  <Bar dataKey="quantity" name="Tickets sold" fill={C.violet} radius={[0, 4, 4, 0]} activeBar={false} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+        <Panel
+          title="Sections by quantity"
+          hint={sectionLimit === "all" ? "all sections · sum of tickets sold" : `top ${sectionLimit} sections · sum of tickets sold`}
+          controls={<Segments values={[10, 15, 20, 30, "all"] as const} value={sectionLimit} onChange={setSectionLimit} labels={{ 10: "Top 10", 15: "Top 15", 20: "Top 20", 30: "Top 30", all: "All" }} />}
+        >
+          {(maximized) => {
+            const rowHeight = maximized ? 34 : 26;
+            const minHeight = maximized ? 420 : 320;
+            const chartHeight = Math.max(minHeight, sectionStats.length * rowHeight);
+            return (
+              <div className="mt-4" style={{ height: `${chartHeight}px` }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={sectionStats} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
+                    <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
+                    <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={number} />
+                    <YAxis type="category" dataKey="section" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
+                    <Bar dataKey="quantity" name="Tickets sold" fill={C.violet} radius={[0, 4, 4, 0]} activeBar={false} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            );
+          }}
         </Panel>
 
         <Panel title="Price distribution" hint="per ticket · threshold and stat markers" controls={<Segments values={["bars", "cdf"] as const} value={histMode} onChange={setHistMode} labels={{ bars: "Bars", cdf: "Cumulative" }} />}>
@@ -481,6 +495,24 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
           )}
         </Panel>
       </div>
+
+      <Panel title="Price change" hint={"rolling window vs prior period · anchored to " + (trendAsOf || inputDate(maxTime))} controls={<Segments values={["pct", "usd"] as const} value={trendMode} onChange={setTrendMode} labels={{ pct: "%", usd: "$" }} />}>
+        {(maximized) => (
+          <>
+            <div className={`mt-3 flex flex-wrap items-center gap-4 ${maximized ? "text-base" : "text-xs"}`}>
+              <label className="flex items-center gap-2 text-[#9c96b3]">As of<input type="date" value={trendAsOf} max={inputDate(maxTime)} onChange={(event) => setTrendAsOf(event.target.value)} className="rounded-lg border border-white/10 bg-[#221d3a] px-2 py-1.5 [color-scheme:dark]" /></label>
+              <label className="flex items-center gap-2 text-[#9c96b3]">Custom window<input type="number" min="1" max="3650" value={customWindow} onChange={(event) => setCustomWindow(Math.max(1, Number(event.target.value) || 1))} className="w-20 rounded-lg border border-white/10 bg-[#221d3a] px-2 py-1.5" />days</label>
+              <Toggle checked={trendRespectWindow} onChange={setTrendRespectWindow} label="Respect Window filter" />
+            </div>
+            <div className="mt-4 overflow-auto">
+              <table className={`w-full min-w-[650px] border-collapse ${maximized ? "text-lg" : "text-xs"}`}>
+                <thead><tr className={`uppercase tracking-[.1em] text-[#9c96b3] ${maximized ? "text-base" : "text-[10px]"}`}><th className="border-b border-white/10 px-3 py-2 text-left">Metric</th>{trendRows[0]?.values.map((value, index) => <th key={index} className="border-b border-white/10 px-3 py-2 text-center">{value.days}d</th>)}</tr></thead>
+                <tbody>{trendRows.map((metric) => <tr key={metric.kind}><td className="border-b border-white/[.045] px-3 py-3 font-semibold">{metric.label}</td>{metric.values.map((value, index) => <td key={index} title={value.available ? money(value.before) + " → " + money(value.now) : "Not enough data in both periods"} className="border-b border-white/[.045] px-3 py-3 text-center font-mono font-bold">{value.available ? <span className={value.delta > 0 ? "text-[#ff5d8f]" : value.delta < 0 ? "text-[#4dd6c4]" : "text-[#9c96b3]"}>{value.delta > 0 ? "▲ " : value.delta < 0 ? "▼ " : ""}{trendMode === "pct" ? Math.abs(value.delta).toFixed(1) + "%" : money(Math.abs(value.delta))}</span> : <span className="font-normal text-[#5f5972]">—</span>}</td>)}</tr>)}</tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </Panel>
 
       <Panel title="All entries · explorer" hint={number(explorerRows.length) + " matching raw rows"}>
         {(maximized) => (
@@ -538,24 +570,6 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
               </table>
             </div>
             {explorerRows.length > 500 && <p className={`mt-3 font-mono text-[#9c96b3] ${maximized ? "text-sm" : "text-[10px]"}`}>Showing the first 500 sorted rows. Narrow the search to inspect more.</p>}
-          </>
-        )}
-      </Panel>
-
-      <Panel title="Price change" hint={"rolling window vs prior period · anchored to " + (trendAsOf || inputDate(maxTime))} controls={<Segments values={["pct", "usd"] as const} value={trendMode} onChange={setTrendMode} labels={{ pct: "%", usd: "$" }} />}>
-        {(maximized) => (
-          <>
-            <div className={`mt-3 flex flex-wrap items-center gap-4 ${maximized ? "text-base" : "text-xs"}`}>
-              <label className="flex items-center gap-2 text-[#9c96b3]">As of<input type="date" value={trendAsOf} max={inputDate(maxTime)} onChange={(event) => setTrendAsOf(event.target.value)} className="rounded-lg border border-white/10 bg-[#221d3a] px-2 py-1.5 [color-scheme:dark]" /></label>
-              <label className="flex items-center gap-2 text-[#9c96b3]">Custom window<input type="number" min="1" max="3650" value={customWindow} onChange={(event) => setCustomWindow(Math.max(1, Number(event.target.value) || 1))} className="w-20 rounded-lg border border-white/10 bg-[#221d3a] px-2 py-1.5" />days</label>
-              <Toggle checked={trendRespectWindow} onChange={setTrendRespectWindow} label="Respect Window filter" />
-            </div>
-            <div className="mt-4 overflow-auto">
-              <table className={`w-full min-w-[650px] border-collapse ${maximized ? "text-lg" : "text-xs"}`}>
-                <thead><tr className={`uppercase tracking-[.1em] text-[#9c96b3] ${maximized ? "text-base" : "text-[10px]"}`}><th className="border-b border-white/10 px-3 py-2 text-left">Metric</th>{trendRows[0]?.values.map((value, index) => <th key={index} className="border-b border-white/10 px-3 py-2 text-center">{value.days}d</th>)}</tr></thead>
-                <tbody>{trendRows.map((metric) => <tr key={metric.kind}><td className="border-b border-white/[.045] px-3 py-3 font-semibold">{metric.label}</td>{metric.values.map((value, index) => <td key={index} title={value.available ? money(value.before) + " → " + money(value.now) : "Not enough data in both periods"} className="border-b border-white/[.045] px-3 py-3 text-center font-mono font-bold">{value.available ? <span className={value.delta > 0 ? "text-[#ff5d8f]" : value.delta < 0 ? "text-[#4dd6c4]" : "text-[#9c96b3]"}>{value.delta > 0 ? "▲ " : value.delta < 0 ? "▼ " : ""}{trendMode === "pct" ? Math.abs(value.delta).toFixed(1) + "%" : money(Math.abs(value.delta))}</span> : <span className="font-normal text-[#5f5972]">—</span>}</td>)}</tr>)}</tbody>
-              </table>
-            </div>
           </>
         )}
       </Panel>
