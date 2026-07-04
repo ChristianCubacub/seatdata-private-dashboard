@@ -422,9 +422,9 @@ export default function DashboardPage() {
               <Panel title="Daily aggregate ledger" hint={`${daily.length} days · no transaction rows exposed`}>
                 {(maximized) => (
                   <div className={maximized ? "mt-4 max-h-[75vh] overflow-auto" : "mt-4 max-h-[390px] overflow-auto"}>
-                    <table className={`w-full border-collapse text-left ${maximized ? "text-base" : "text-xs"}`}>
+                    <table className="w-full border-collapse text-left">
                       <thead className="sticky top-0 z-10 bg-[#1b1830]">
-                        <tr className={`uppercase tracking-[.1em] text-[#9c96b3] ${maximized ? "text-sm" : "text-[10px]"}`}>
+                        <tr className={`uppercase tracking-[.1em] text-[#9c96b3] ${maximized ? "text-base" : "text-[10px]"}`}>
                           <th className="border-b border-white/10 px-2 py-2 font-semibold">Date</th>
                           <th className="border-b border-white/10 px-2 py-2 text-right font-semibold">Tickets</th>
                           <th className="border-b border-white/10 px-2 py-2 text-right font-semibold">Average</th>
@@ -434,10 +434,10 @@ export default function DashboardPage() {
                       <tbody className="font-mono">
                         {[...daily].reverse().map((row) => (
                           <tr key={row.date} className="hover:bg-white/[.03]">
-                            <td className="border-b border-white/[.045] px-2 py-2">{dateLabel(row.date)}</td>
-                            <td className="border-b border-white/[.045] px-2 py-2 text-right text-[#b06cff]">{number(row.ticketsSold)}</td>
-                            <td className="border-b border-white/[.045] px-2 py-2 text-right text-[#4dd6c4]">{money(row.averagePrice)}</td>
-                            <td className="border-b border-white/[.045] px-2 py-2 text-right text-[#ffb43d]">{money(row.grossSales)}</td>
+                            <td className={`border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}>{dateLabel(row.date)}</td>
+                            <td className={`border-b border-white/[.045] px-2 py-2 text-right text-[#b06cff] ${maximized ? "text-lg" : "text-xs"}`}>{number(row.ticketsSold)}</td>
+                            <td className={`border-b border-white/[.045] px-2 py-2 text-right text-[#4dd6c4] ${maximized ? "text-lg" : "text-xs"}`}>{money(row.averagePrice)}</td>
+                            <td className={`border-b border-white/[.045] px-2 py-2 text-right text-[#ffb43d] ${maximized ? "text-lg" : "text-xs"}`}>{money(row.grossSales)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -470,9 +470,9 @@ export default function DashboardPage() {
                     This replaces the template&apos;s raw-row explorer. Section, row, and individual transaction details remain in private backend storage.
                   </p>
                   <div className={(maximized ? "mt-4 max-h-[75vh] overflow-auto" : "mt-4 max-h-[460px] overflow-auto") + " border-t border-white/10"}>
-                    <table className={`w-full border-collapse text-left ${maximized ? "text-base" : "text-xs"}`}>
+                    <table className="w-full border-collapse text-left">
                       <thead className="sticky top-0 z-10 bg-[#1b1830]">
-                        <tr className={`uppercase tracking-[.1em] text-[#9c96b3] ${maximized ? "text-sm" : "text-[10px]"}`}>
+                        <tr className={`uppercase tracking-[.1em] text-[#9c96b3] ${maximized ? "text-base" : "text-[10px]"}`}>
                           <th className="border-b border-white/10 px-3 py-2 font-semibold">Zone</th>
                           <th className="border-b border-white/10 px-3 py-2 text-right font-semibold">Tickets sold</th>
                           <th className="border-b border-white/10 px-3 py-2 text-right font-semibold">Average price</th>
@@ -483,11 +483,11 @@ export default function DashboardPage() {
                         {zoneRows.map((row) => (
                           <tr key={row.zone} className="hover:bg-white/[.03]">
                             <td className="border-b border-white/[.045] px-3 py-2">
-                              <span className={`rounded-full bg-[#221d3a] px-2 py-1 font-sans text-[#b06cff] ${maximized ? "text-sm" : "text-[10px]"}`}>{row.zone}</span>
+                              <span className={`rounded-full bg-[#221d3a] px-2 py-1 font-sans text-[#b06cff] ${maximized ? "text-base" : "text-[10px]"}`}>{row.zone}</span>
                             </td>
-                            <td className="border-b border-white/[.045] px-3 py-2 text-right">{number(row.ticketsSold)}</td>
-                            <td className="border-b border-white/[.045] px-3 py-2 text-right text-[#4dd6c4]">{money(row.averagePrice)}</td>
-                            <td className="border-b border-white/[.045] px-3 py-2 text-right text-[#ffb43d]">{money(row.grossSales)}</td>
+                            <td className={`border-b border-white/[.045] px-3 py-2 text-right ${maximized ? "text-lg" : "text-xs"}`}>{number(row.ticketsSold)}</td>
+                            <td className={`border-b border-white/[.045] px-3 py-2 text-right text-[#4dd6c4] ${maximized ? "text-lg" : "text-xs"}`}>{money(row.averagePrice)}</td>
+                            <td className={`border-b border-white/[.045] px-3 py-2 text-right text-[#ffb43d] ${maximized ? "text-lg" : "text-xs"}`}>{money(row.grossSales)}</td>
                           </tr>
                         ))}
                       </tbody>

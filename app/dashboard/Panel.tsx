@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { flushSync } from "react-dom";
 
 const DEFAULT_CLASSNAME =
   "min-w-0 rounded-[14px] border border-white/10 bg-[#1b1830] p-4 shadow-[0_18px_50px_rgba(0,0,0,.15)] sm:p-[18px]";
@@ -25,7 +24,6 @@ export default function Panel({
 }) {
   const [maximized, setMaximized] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [exporting, setExporting] = useState(false);
   const nodeRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -44,34 +42,54 @@ export default function Panel({
   async function downloadPng() {
     if (!nodeRef.current || downloading) return;
     setDownloading(true);
-    flushSync(() => setExporting(true));
     try {
-      const { toPng } = await import("html-to-image");
-      const dataUrl = await toPng(nodeRef.current, {
-        backgroundColor: "#1b1830",
-        pixelRatio: 2,
-        filter: (domNode) => !(domNode instanceof HTMLElement && domNode.dataset.exportIgnore === "true"),
-      });
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = `${slugify(title)}.png`;
-      link.click();
+      const source = nodeRef.current;
+      const clone = source.cloneNode(true) as HTMLElement;
+
+      clone.querySelectorAll('[data-export-ignore="true"]').forEach((node) => node.remove());
+
+      const header = clone.querySelector<HTMLElement>('[data-panel-header]');
+      const titleBlock = clone.querySelector<HTMLElement>('[data-panel-title-block]');
+      const controlsBlock = clone.querySelector<HTMLElement>('[data-panel-controls]');
+      if (header) { header.style.flexDirection = "column"; header.style.alignItems = "center"; }
+      if (titleBlock) { titleBlock.style.textAlign = "center"; }
+      if (controlsBlock) { controlsBlock.style.width = "100%"; controlsBlock.style.justifyContent = "flex-end"; }
+
+      const watermark = document.createElement("p");
+      watermark.textContent = "Graphic by coxchristian • Data provided by SeatData.io";
+      watermark.style.cssText = "margin-top:1rem;text-align:center;font-family:ui-monospace,monospace;font-size:11px;color:#9c96b3;";
+      clone.appendChild(watermark);
+
+      clone.style.position = "fixed";
+      clone.style.top = "0";
+      clone.style.left = "-99999px";
+      clone.style.zIndex = "-1";
+      clone.style.margin = "0";
+      clone.style.width = `${source.getBoundingClientRect().width}px`;
+      clone.style.padding = "2.5rem";
+
+      document.body.appendChild(clone);
+      try {
+        const { toPng } = await import("html-to-image");
+        const dataUrl = await toPng(clone, { backgroundColor: "#1b1830", pixelRatio: 2 });
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = `${slugify(title)}.png`;
+        link.click();
+      } finally {
+        document.body.removeChild(clone);
+      }
     } catch (error) {
       console.error(error);
     } finally {
-      flushSync(() => setExporting(false));
       setDownloading(false);
     }
   }
 
   return (
-    <section
-      ref={nodeRef}
-      className={maximized ? "fixed inset-0 z-[999] overflow-auto bg-[#12101c] p-6 sm:p-10" : className}
-      style={exporting ? { padding: "2.5rem" } : undefined}
-    >
-      <div className={`flex gap-2 ${(maximized || exporting) ? "flex-col items-center text-center" : "flex-wrap items-start justify-between"}`}>
-        <div>
+    <section ref={nodeRef} className={maximized ? "fixed inset-0 z-[999] overflow-auto bg-[#12101c] p-6 sm:p-10" : className}>
+      <div data-panel-header className={`flex gap-2 ${maximized ? "flex-col items-center" : "flex-wrap items-start justify-between"}`}>
+        <div data-panel-title-block className={maximized ? "text-center" : ""}>
           <h2
             onClick={() => setMaximized((current) => !current)}
             title="Click to maximize · Esc to close"
@@ -81,7 +99,7 @@ export default function Panel({
           </h2>
           {hint && <p className={`mt-1 text-[#9c96b3] ${maximized ? "text-sm" : "text-[11px]"}`}>{hint}</p>}
         </div>
-        <div className={`flex flex-wrap items-center gap-2 ${(maximized || exporting) ? "justify-center" : ""}`}>
+        <div data-panel-controls className={`flex flex-wrap items-center gap-2 ${maximized ? "w-full justify-end" : ""}`}>
           {controls}
           <div className="flex items-center gap-2" data-export-ignore="true">
             <button
@@ -104,11 +122,6 @@ export default function Panel({
         </div>
       </div>
       {typeof children === "function" ? children(maximized) : children}
-      {exporting && (
-        <p className="mt-4 text-center font-mono text-[11px] text-[#9c96b3]">
-          Graphic by coxchristian • Data provided by SeatData.io
-        </p>
-      )}
     </section>
   );
 }
