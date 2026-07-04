@@ -225,8 +225,11 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
   const [daysOutSeries, setDaysOutSeries] = useState({ tickets: true, getIn: true, median: true, average: false });
   const daysOutStats = useMemo(() => {
     const buckets = [
-      { label: "30+ days", min: 30, max: Infinity },
-      { label: "15-29 days", min: 15, max: 29 },
+      { label: "180+ days", min: 180, max: Infinity },
+      { label: "91-179 days", min: 91, max: 179 },
+      { label: "61-90 days", min: 61, max: 90 },
+      { label: "31-60 days", min: 31, max: 60 },
+      { label: "15-30 days", min: 15, max: 30 },
       { label: "8-14 days", min: 8, max: 14 },
       { label: "4-7 days", min: 4, max: 7 },
       { label: "2-3 days", min: 2, max: 3 },
@@ -560,7 +563,8 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
         </Panel>
       </div>
 
-      <Panel title="Price change" hint={"rolling window vs prior period · anchored to " + (trendAsOf || inputDate(maxTime))} controls={<Segments values={["pct", "usd"] as const} value={trendMode} onChange={setTrendMode} labels={{ pct: "%", usd: "$" }} />}>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Panel title="Price change" hint={"rolling window vs prior period · anchored to " + (trendAsOf || inputDate(maxTime))} controls={<Segments values={["pct", "usd"] as const} value={trendMode} onChange={setTrendMode} labels={{ pct: "%", usd: "$" }} />}>
         {(maximized) => (
           <>
             <div className={`mt-3 flex flex-wrap items-center gap-4 ${maximized ? "text-base" : "text-xs"}`}>
@@ -611,6 +615,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
           </>
         )}
       </Panel>
+      </div>
 
       <Panel title="All entries · explorer" hint={number(explorerRows.length) + " matching raw rows"}>
         {(maximized) => (
