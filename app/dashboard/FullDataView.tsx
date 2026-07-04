@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import {
-  Bar, BarChart, CartesianGrid, ComposedChart, Line, ReferenceLine,
+  Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import type { SeatDataSale } from "@/lib/types";
@@ -157,8 +157,26 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
 
   const zoneStats = useMemo(() => allZones.map((zone) => {
     const group = filtered.filter((row) => row.zone === zone);
-    return { zone, medianPrice: median(group.map((row) => row.price)), sales: group.length, tickets: group.reduce((sum, row) => sum + row.quantity, 0) };
-  }).filter((row) => row.sales).sort((a, b) => a.medianPrice - b.medianPrice), [allZones, filtered]);
+    const prices = group.map((row) => row.price);
+    const averagePrice = prices.length ? prices.reduce((sum, price) => sum + price, 0) / prices.length : 0;
+    return {
+      zone,
+      minPrice: prices.length ? Math.min(...prices) : 0,
+      medianPrice: median(prices),
+      averagePrice,
+      sales: group.length,
+      tickets: group.reduce((sum, row) => sum + row.quantity, 0),
+    };
+  }).filter((row) => row.sales), [allZones, filtered]);
+
+  const [zoneMetric, setZoneMetric] = useState<"min" | "median" | "average">("median");
+  const zoneMetricKey = zoneMetric === "min" ? "minPrice" : zoneMetric === "average" ? "averagePrice" : "medianPrice";
+  const zoneMetricLabel = zoneMetric === "min" ? "Minimum" : zoneMetric === "average" ? "Average" : "Median";
+  const sortedZoneStats = useMemo(
+    () => [...zoneStats].sort((a, b) => a[zoneMetricKey] - b[zoneMetricKey]).slice(0, 12),
+    [zoneStats, zoneMetricKey]
+  );
+  const maxZoneSales = Math.max(1, ...sortedZoneStats.map((entry) => entry.sales));
 
   const histogramZones = useMemo(() => {
     const salesByZone = new Map(zoneStats.map((entry) => [entry.zone, entry.sales]));
@@ -350,16 +368,24 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
           )}
         </Panel>
 
-        <Panel title="Median price by zone" hint="length = median · shade = sales volume">
+        <Panel
+          title="Price by zone"
+          hint={`length = ${zoneMetricLabel.toLowerCase()} · shade = sales volume`}
+          controls={<Segments values={["min", "median", "average"] as const} value={zoneMetric} onChange={setZoneMetric} labels={{ min: "Min", median: "Median", average: "Average" }} />}
+        >
           {(maximized) => (
             <div className={maximized ? "mt-4 h-[70vh]" : "mt-4 h-[320px]"}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={zoneStats.slice(0, 12)} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
+                <BarChart data={sortedZoneStats} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
                   <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
                   <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
                   <YAxis type="category" dataKey="zone" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-                  <Bar dataKey="medianPrice" name="Median price" fill={C.amber} radius={[0, 4, 4, 0]} activeBar={false} />
+                  <Bar dataKey={zoneMetricKey} name={`${zoneMetricLabel} price`} radius={[0, 4, 4, 0]} activeBar={false}>
+                    {sortedZoneStats.map((entry) => (
+                      <Cell key={entry.zone} fill={C.amber} fillOpacity={0.35 + 0.55 * (entry.sales / maxZoneSales)} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
