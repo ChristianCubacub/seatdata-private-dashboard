@@ -14,6 +14,7 @@ type HistogramMode = "bars" | "cdf";
 type BinSize = 50 | 100 | 250 | "auto";
 type TrendMode = "pct" | "usd";
 type SortKey = "timestamp" | "zone" | "section" | "row" | "quantity" | "price";
+type SectionView = "top10" | "top15" | "top20" | "top30" | "all" | "bottom10" | "bottom15" | "bottom20" | "bottom30" | "bottomHalf";
 
 type SaleRow = {
   timestamp: number;
@@ -190,11 +191,26 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
       .sort((a, b) => b.quantity - a.quantity);
   }, [filtered]);
 
-  const [sectionLimit, setSectionLimit] = useState<10 | 15 | 20 | 30 | "all">(10);
-  const sectionStats = useMemo(
-    () => (sectionLimit === "all" ? sectionStatsAll : sectionStatsAll.slice(0, sectionLimit)),
-    [sectionStatsAll, sectionLimit]
-  );
+  const [sectionView, setSectionView] = useState<SectionView>("top10");
+  const sectionStats = useMemo(() => {
+    switch (sectionView) {
+      case "top10": return sectionStatsAll.slice(0, 10);
+      case "top15": return sectionStatsAll.slice(0, 15);
+      case "top20": return sectionStatsAll.slice(0, 20);
+      case "top30": return sectionStatsAll.slice(0, 30);
+      case "all": return sectionStatsAll;
+      case "bottom10": return sectionStatsAll.slice(-10);
+      case "bottom15": return sectionStatsAll.slice(-15);
+      case "bottom20": return sectionStatsAll.slice(-20);
+      case "bottom30": return sectionStatsAll.slice(-30);
+      case "bottomHalf": return sectionStatsAll.slice(-Math.ceil(sectionStatsAll.length / 2));
+      default: return sectionStatsAll;
+    }
+  }, [sectionStatsAll, sectionView]);
+  const sectionViewLabel: Record<SectionView, string> = {
+    top10: "top 10", top15: "top 15", top20: "top 20", top30: "top 30", all: "all",
+    bottom10: "bottom 10", bottom15: "bottom 15", bottom20: "bottom 20", bottom30: "bottom 30", bottomHalf: "bottom half",
+  };
 
   const histogramZones = useMemo(() => {
     const salesByZone = new Map(zoneStats.map((entry) => [entry.zone, entry.sales]));
@@ -425,11 +441,16 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel
           title="Sections by quantity"
-          hint={sectionLimit === "all" ? "all sections · sum of tickets sold" : `top ${sectionLimit} sections · sum of tickets sold`}
-          controls={<Segments values={[10, 15, 20, 30, "all"] as const} value={sectionLimit} onChange={setSectionLimit} labels={{ 10: "Top 10", 15: "Top 15", 20: "Top 20", 30: "Top 30", all: "All" }} />}
+          hint={`${sectionViewLabel[sectionView]} sections · sum of tickets sold`}
+          controls={
+            <div className="flex flex-col items-end gap-1.5">
+              <Segments values={["top10", "top15", "top20", "top30", "all"] as const} value={sectionView} onChange={setSectionView} labels={{ top10: "Top 10", top15: "Top 15", top20: "Top 20", top30: "Top 30", all: "All" }} />
+              <Segments values={["bottom10", "bottom15", "bottom20", "bottom30", "bottomHalf"] as const} value={sectionView} onChange={setSectionView} labels={{ bottom10: "Bottom 10", bottom15: "Bottom 15", bottom20: "Bottom 20", bottom30: "Bottom 30", bottomHalf: "Bottom half" }} />
+            </div>
+          }
         >
           {(maximized) => (
-            <div className={maximized ? "mt-4 h-[70vh]" : "mt-4 h-[320px]"}>
+            <div className={`mt-4 flex-1 ${maximized ? "min-h-[70vh]" : "min-h-[320px]"}`}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={sectionStats} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
                   <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />

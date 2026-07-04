@@ -83,7 +83,7 @@ export default function Panel({
   }
 
   return (
-    <section ref={nodeRef} className={maximized ? "fixed inset-0 z-[999] overflow-auto bg-[#12101c] p-6 sm:p-10" : className}>
+    <section ref={nodeRef} className={(maximized ? "fixed inset-0 z-[999] overflow-auto bg-[#12101c] p-6 sm:p-10" : className) + " flex flex-col"}>
       <div data-panel-header className={`flex items-center gap-2 ${maximized ? "" : "flex-wrap items-start justify-between"}`}>
         <div data-panel-title-block className={maximized ? "flex-1 text-center" : ""}>
           <h2
