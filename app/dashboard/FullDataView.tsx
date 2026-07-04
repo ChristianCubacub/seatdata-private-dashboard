@@ -52,7 +52,9 @@ const median = (values: number[]) => {
 };
 const day = 86_400_000;
 const inputDate = (time: number) => new Date(time).toISOString().slice(0, 10);
-const displayTime = (time: number) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "2-digit", hour: "numeric", minute: "2-digit" }).format(new Date(time));
+const displayDate = (time: number) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "2-digit" }).format(new Date(time));
+const displayClock = (time: number) => new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(new Date(time));
+const displayTime = (time: number) => `${displayDate(time)} ${displayClock(time)}`;
 
 function Panel({ title, hint, controls, children }: { title: string; hint?: string; controls?: ReactNode; children: ReactNode }) {
   return (
