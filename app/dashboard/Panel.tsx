@@ -47,6 +47,7 @@ export default function Panel({
       const clone = source.cloneNode(true) as HTMLElement;
 
       clone.querySelectorAll('[data-export-ignore="true"]').forEach((node) => node.remove());
+      clone.querySelectorAll('[data-export-strip="true"]').forEach((node) => node.remove());
 
       const header = clone.querySelector<HTMLElement>('[data-panel-header]');
       const titleBlock = clone.querySelector<HTMLElement>('[data-panel-title-block]');

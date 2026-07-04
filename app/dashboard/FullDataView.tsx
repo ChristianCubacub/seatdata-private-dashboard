@@ -354,7 +354,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
           {(maximized) => (
             <div className={maximized ? "mt-4 h-[70vh]" : "mt-4 h-[320px]"}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={zoneStats.slice(0, 12)} layout="vertical" margin={{ left: 6, right: maximized ? 50 : 32 }}>
+                <BarChart data={zoneStats.slice(0, 12)} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
                   <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
                   <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
                   <YAxis type="category" dataKey="zone" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
@@ -397,7 +397,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
               <div className="mt-3" data-export-ignore="true"><Segments values={[50, 100, 250, "auto"] as const} value={binSize} onChange={setBinSize} labels={{ 50: "$50", 100: "$100", 250: "$250", auto: "Auto" }} /></div>
               <div className={maximized ? "mt-2 h-[65vh]" : "mt-2 h-[300px]"}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={histogram}>
+                  <ComposedChart data={histogram} margin={{ right: maximized ? 40 : 20 }}>
                     <CartesianGrid stroke="rgba(255,255,255,.055)" vertical={false} />
                     <XAxis dataKey="bucket" tick={axisTick(maximized, 9)} tickLine={false} axisLine={{ stroke: "rgba(255,255,255,.09)" }} minTickGap={18} />
                     <YAxis domain={histMode === "cdf" ? [0, 100] : undefined} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => histMode === "cdf" ? value + "%" : String(value)} />
@@ -423,7 +423,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                       className={`rounded-md border px-2 py-1 transition ${isolatedZone && isolatedZone !== entry.zone ? "border-transparent text-[#5f5972]" : "border-white/10 text-white"}`}
                     >
                       <i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style={{ background: entry.color }} />
-                      {entry.zone} ({number(entry.sales)})
+                      {entry.zone} <span data-export-strip="true">({number(entry.sales)})</span>
                     </button>
                   ))}
                 </div>
