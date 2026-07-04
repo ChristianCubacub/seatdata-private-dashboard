@@ -435,7 +435,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
               <div className="mt-3" data-export-ignore="true"><Segments values={[50, 100, 250, "auto"] as const} value={binSize} onChange={setBinSize} labels={{ 50: "$50", 100: "$100", 250: "$250", auto: "Auto" }} /></div>
               <div className={maximized ? "mt-2 h-[65vh]" : "mt-2 h-[300px]"}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={histogram} margin={{ right: maximized ? 12 : 6 }}>
+                  <ComposedChart data={histogram} margin={{ right: maximized ? 12 : 40 }}>
                     <CartesianGrid stroke="rgba(255,255,255,.055)" vertical={false} />
                     <XAxis dataKey="bucket" tick={axisTick(maximized, 9)} tickLine={false} axisLine={{ stroke: "rgba(255,255,255,.09)" }} minTickGap={18} />
                     <YAxis domain={histMode === "cdf" ? [0, 100] : undefined} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => histMode === "cdf" ? value + "%" : String(value)} />
