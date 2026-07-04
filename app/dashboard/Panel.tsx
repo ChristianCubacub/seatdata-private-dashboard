@@ -65,7 +65,11 @@ export default function Panel({
   }
 
   return (
-    <section ref={nodeRef} className={maximized ? "fixed inset-0 z-[999] overflow-auto bg-[#12101c] p-6 sm:p-10" : className}>
+    <section
+      ref={nodeRef}
+      className={maximized ? "fixed inset-0 z-[999] overflow-auto bg-[#12101c] p-6 sm:p-10" : className}
+      style={exporting ? { padding: "2.5rem" } : undefined}
+    >
       <div className={`flex gap-2 ${(maximized || exporting) ? "flex-col items-center text-center" : "flex-wrap items-start justify-between"}`}>
         <div>
           <h2
@@ -100,6 +104,11 @@ export default function Panel({
         </div>
       </div>
       {typeof children === "function" ? children(maximized) : children}
+      {exporting && (
+        <p className="mt-4 text-center font-mono text-[11px] text-[#9c96b3]">
+          Graphic by coxchristian • Data provided by SeatData.io
+        </p>
+      )}
     </section>
   );
 }
