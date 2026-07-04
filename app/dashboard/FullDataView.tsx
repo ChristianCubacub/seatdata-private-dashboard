@@ -177,6 +177,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
     [zoneStats, zoneMetricKey]
   );
   const maxZoneSales = Math.max(1, ...sortedZoneStats.map((entry) => entry.sales));
+  const minZoneSales = sortedZoneStats.length ? Math.min(...sortedZoneStats.map((entry) => entry.sales)) : 0;
 
   const histogramZones = useMemo(() => {
     const salesByZone = new Map(zoneStats.map((entry) => [entry.zone, entry.sales]));
@@ -374,21 +375,32 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
           controls={<Segments values={["min", "median", "average"] as const} value={zoneMetric} onChange={setZoneMetric} labels={{ min: "Min", median: "Median", average: "Average" }} />}
         >
           {(maximized) => (
-            <div className={maximized ? "mt-4 h-[70vh]" : "mt-4 h-[320px]"}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={sortedZoneStats} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
-                  <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
-                  <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
-                  <YAxis type="category" dataKey="zone" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-                  <Bar dataKey={zoneMetricKey} name={`${zoneMetricLabel} price`} radius={[0, 4, 4, 0]} activeBar={false}>
-                    {sortedZoneStats.map((entry) => (
-                      <Cell key={entry.zone} fill={C.amber} fillOpacity={0.35 + 0.55 * (entry.sales / maxZoneSales)} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <>
+              <div className={maximized ? "mt-4 h-[70vh]" : "mt-4 h-[320px]"}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={sortedZoneStats} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
+                    <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
+                    <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
+                    <YAxis type="category" dataKey="zone" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
+                    <Bar dataKey={zoneMetricKey} name={`${zoneMetricLabel} price`} radius={[0, 4, 4, 0]} activeBar={false}>
+                      {sortedZoneStats.map((entry) => (
+                        <Cell key={entry.zone} fill={C.amber} fillOpacity={0.35 + 0.55 * (entry.sales / maxZoneSales)} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className={`mt-2 flex items-center gap-2 font-mono ${maximized ? "text-sm" : "text-[10px]"}`}>
+                <span className="text-[#ffb43d]">Shade = sales volume</span>
+                <span className="text-[#9c96b3]">{minZoneSales}</span>
+                <div
+                  className="h-[9px] w-24 rounded-full border border-white/10"
+                  style={{ background: "linear-gradient(90deg, rgba(255,180,61,.35), rgba(255,180,61,.9))" }}
+                />
+                <span className="text-[#9c96b3]">{maxZoneSales} sales</span>
+              </div>
+            </>
           )}
         </Panel>
       </div>
@@ -446,7 +458,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                     <button
                       key={entry.zone}
                       onClick={() => toggleIsolateZone(entry.zone)}
-                      className={`rounded-md border px-2 py-1 transition ${isolatedZone && isolatedZone !== entry.zone ? "border-transparent text-[#5f5972]" : "border-white/10 text-white"}`}
+                      className={`whitespace-nowrap rounded-md border px-2 py-1 transition ${isolatedZone && isolatedZone !== entry.zone ? "border-transparent text-[#5f5972]" : "border-white/10 text-white"}`}
                     >
                       <i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style={{ background: entry.color }} />
                       {entry.zone} <span data-export-strip="true">({number(entry.sales)})</span>

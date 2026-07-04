@@ -49,12 +49,8 @@ export default function Panel({
       clone.querySelectorAll('[data-export-ignore="true"]').forEach((node) => node.remove());
       clone.querySelectorAll('[data-export-strip="true"]').forEach((node) => node.remove());
 
-      const header = clone.querySelector<HTMLElement>('[data-panel-header]');
       const titleBlock = clone.querySelector<HTMLElement>('[data-panel-title-block]');
-      const controlsBlock = clone.querySelector<HTMLElement>('[data-panel-controls]');
-      if (header) { header.style.flexDirection = "column"; header.style.alignItems = "center"; }
-      if (titleBlock) { titleBlock.style.textAlign = "center"; }
-      if (controlsBlock) { controlsBlock.style.width = "100%"; controlsBlock.style.justifyContent = "flex-end"; }
+      if (titleBlock) { titleBlock.style.flex = "1 1 auto"; titleBlock.style.textAlign = "center"; }
 
       const watermark = document.createElement("p");
       watermark.textContent = "Graphic by ccxchristian • Data provided by SeatData.io";
@@ -88,8 +84,8 @@ export default function Panel({
 
   return (
     <section ref={nodeRef} className={maximized ? "fixed inset-0 z-[999] overflow-auto bg-[#12101c] p-6 sm:p-10" : className}>
-      <div data-panel-header className={`flex gap-2 ${maximized ? "flex-col items-center" : "flex-wrap items-start justify-between"}`}>
-        <div data-panel-title-block className={maximized ? "text-center" : ""}>
+      <div data-panel-header className={`flex items-center gap-2 ${maximized ? "" : "flex-wrap items-start justify-between"}`}>
+        <div data-panel-title-block className={maximized ? "flex-1 text-center" : ""}>
           <h2
             onClick={() => setMaximized((current) => !current)}
             title="Click to maximize · Esc to close"
@@ -99,7 +95,7 @@ export default function Panel({
           </h2>
           {hint && <p className={`mt-1 text-[#9c96b3] ${maximized ? "text-sm" : "text-[11px]"}`}>{hint}</p>}
         </div>
-        <div data-panel-controls className={`flex flex-wrap items-center gap-2 ${maximized ? "w-full justify-end" : ""}`}>
+        <div data-panel-controls className="flex flex-wrap items-center gap-2">
           {controls && <div className="contents" data-export-ignore="true">{controls}</div>}
           <div className="flex items-center gap-2" data-export-ignore="true">
             <button
