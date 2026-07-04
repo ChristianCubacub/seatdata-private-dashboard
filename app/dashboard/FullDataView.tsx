@@ -279,7 +279,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
           ["Median price", money(summary.median), "per sales row", C.hot],
           ["Average price", money(summary.average), "weighted · per ticket", C.teal],
           ["Tickets sold", number(summary.tickets), "sum of quantity", C.amber],
-          ["Sales rows", number(summary.records), "matching raw records", C.violet],
+          ["Sales transactions", number(summary.records), "matching raw records", C.violet],
         ].map(([label, value, note, color]) => (
           <article key={label} className="rounded-xl border border-white/10 bg-[#1b1830] p-4">
             <p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">{label}</p>
