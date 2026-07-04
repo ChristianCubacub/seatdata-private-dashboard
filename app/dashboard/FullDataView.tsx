@@ -475,7 +475,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
           }
         >
           {(maximized) => (
-            <div className={`mt-4 flex-1 ${maximized ? "min-h-[70vh]" : "min-h-[320px]"}`}>
+            <div data-chart-fill="true" className={`mt-4 flex-1 ${maximized ? "min-h-[70vh]" : "min-h-[320px]"}`}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={sectionStats} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
                   <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
