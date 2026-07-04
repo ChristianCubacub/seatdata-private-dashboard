@@ -179,6 +179,18 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
   const maxZoneSales = Math.max(1, ...sortedZoneStats.map((entry) => entry.sales));
   const minZoneSales = sortedZoneStats.length ? Math.min(...sortedZoneStats.map((entry) => entry.sales)) : 0;
 
+  const sectionStats = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const row of filtered) {
+      map.set(row.section, (map.get(row.section) ?? 0) + row.quantity);
+    }
+    return [...map.entries()]
+      .map(([section, quantity]) => ({ section, quantity }))
+      .filter((entry) => entry.quantity > 0)
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 12);
+  }, [filtered]);
+
   const histogramZones = useMemo(() => {
     const salesByZone = new Map(zoneStats.map((entry) => [entry.zone, entry.sales]));
     return allZones
@@ -406,26 +418,19 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Recent sales" hint="follows the Window filter · click a header to sort" controls={<Segments values={[1, 3, 14, 30, 90, 180, "all"] as const} value={windowValue} onChange={setWindowValue} labels={{ 1: "1d", 3: "3d", 14: "14d", 30: "30d", 90: "3mo", 180: "6mo", all: "All" }} />}>
+        <Panel title="Sections by quantity" hint="top sections · sum of tickets sold">
           {(maximized) => (
-            <>
-              <div className={maximized ? "mt-4 max-h-[75vh] overflow-auto" : "mt-4 max-h-[440px] overflow-auto"}>
-                <table className="w-full border-collapse text-left">
-                  <thead className="sticky top-0 z-10 bg-[#1b1830]">
-                    <tr>{(["timestamp", "zone", "section", "row", "quantity", "price"] as SortKey[]).map((key) => <th key={key} onClick={() => toggleSort(key)} className={`cursor-pointer border-b border-white/10 px-2 py-2 uppercase tracking-[.1em] text-[#9c96b3] hover:text-white ${maximized ? "text-base" : "text-[10px]"}`}>{key === "timestamp" ? "When" : key === "section" ? "Sec" : key === "quantity" ? "Qty" : key}<span className="ml-1 opacity-50">{recentSort.key === key ? recentSort.direction === 1 ? "▲" : "▼" : ""}</span></th>)}</tr>
-                  </thead>
-                  <tbody className="font-mono">
-                    {recentRows.slice(0, 250).map((row, index) => <tr key={row.timestamp + "-" + index} className="hover:bg-white/[.03]">
-                      <td className={`whitespace-nowrap border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}>{displayTime(row.timestamp)}</td>
-                      <td className={`border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}><span className={`rounded-full bg-[#221d3a] px-2 py-1 font-sans text-[#b06cff] ${maximized ? "text-base" : "text-[10px]"}`}>{row.zone}</span></td>
-                      <td className={`border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}>{row.section}</td><td className={`border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}>{row.row}</td>
-                      <td className={`border-b border-white/[.045] px-2 py-2 text-right ${maximized ? "text-lg" : "text-xs"}`}>{row.quantity}</td><td className={`border-b border-white/[.045] px-2 py-2 text-right text-[#ffb43d] ${maximized ? "text-lg" : "text-xs"}`}>{money(row.price)}</td>
-                    </tr>)}
-                  </tbody>
-                </table>
-              </div>
-              <p className={`mt-3 font-mono text-[#9c96b3] ${maximized ? "text-sm" : "text-[10px]"}`}>Showing {number(Math.min(250, recentRows.length))} of {number(recentRows.length)} matching raw rows.</p>
-            </>
+            <div className={maximized ? "mt-4 h-[70vh]" : "mt-4 h-[320px]"}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={sectionStats} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
+                  <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
+                  <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={number} />
+                  <YAxis type="category" dataKey="section" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
+                  <Bar dataKey="quantity" name="Tickets sold" fill={C.violet} radius={[0, 4, 4, 0]} activeBar={false} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </Panel>
 
@@ -551,6 +556,29 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                 <tbody>{trendRows.map((metric) => <tr key={metric.kind}><td className="border-b border-white/[.045] px-3 py-3 font-semibold">{metric.label}</td>{metric.values.map((value, index) => <td key={index} title={value.available ? money(value.before) + " → " + money(value.now) : "Not enough data in both periods"} className="border-b border-white/[.045] px-3 py-3 text-center font-mono font-bold">{value.available ? <span className={value.delta > 0 ? "text-[#ff5d8f]" : value.delta < 0 ? "text-[#4dd6c4]" : "text-[#9c96b3]"}>{value.delta > 0 ? "▲ " : value.delta < 0 ? "▼ " : ""}{trendMode === "pct" ? Math.abs(value.delta).toFixed(1) + "%" : money(Math.abs(value.delta))}</span> : <span className="font-normal text-[#5f5972]">—</span>}</td>)}</tr>)}</tbody>
               </table>
             </div>
+          </>
+        )}
+      </Panel>
+
+      <Panel title="Recent sales" hint="follows the Window filter · click a header to sort" controls={<Segments values={[1, 3, 14, 30, 90, 180, "all"] as const} value={windowValue} onChange={setWindowValue} labels={{ 1: "1d", 3: "3d", 14: "14d", 30: "30d", 90: "3mo", 180: "6mo", all: "All" }} />}>
+        {(maximized) => (
+          <>
+            <div className={maximized ? "mt-4 max-h-[75vh] overflow-auto" : "mt-4 max-h-[440px] overflow-auto"}>
+              <table className="w-full border-collapse text-left">
+                <thead className="sticky top-0 z-10 bg-[#1b1830]">
+                  <tr>{(["timestamp", "zone", "section", "row", "quantity", "price"] as SortKey[]).map((key) => <th key={key} onClick={() => toggleSort(key)} className={`cursor-pointer border-b border-white/10 px-2 py-2 uppercase tracking-[.1em] text-[#9c96b3] hover:text-white ${maximized ? "text-base" : "text-[10px]"}`}>{key === "timestamp" ? "When" : key === "section" ? "Sec" : key === "quantity" ? "Qty" : key}<span className="ml-1 opacity-50">{recentSort.key === key ? recentSort.direction === 1 ? "▲" : "▼" : ""}</span></th>)}</tr>
+                </thead>
+                <tbody className="font-mono">
+                  {recentRows.slice(0, 250).map((row, index) => <tr key={row.timestamp + "-" + index} className="hover:bg-white/[.03]">
+                    <td className={`whitespace-nowrap border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}>{displayTime(row.timestamp)}</td>
+                    <td className={`border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}><span className={`rounded-full bg-[#221d3a] px-2 py-1 font-sans text-[#b06cff] ${maximized ? "text-base" : "text-[10px]"}`}>{row.zone}</span></td>
+                    <td className={`border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}>{row.section}</td><td className={`border-b border-white/[.045] px-2 py-2 ${maximized ? "text-lg" : "text-xs"}`}>{row.row}</td>
+                    <td className={`border-b border-white/[.045] px-2 py-2 text-right ${maximized ? "text-lg" : "text-xs"}`}>{row.quantity}</td><td className={`border-b border-white/[.045] px-2 py-2 text-right text-[#ffb43d] ${maximized ? "text-lg" : "text-xs"}`}>{money(row.price)}</td>
+                  </tr>)}
+                </tbody>
+              </table>
+            </div>
+            <p className={`mt-3 font-mono text-[#9c96b3] ${maximized ? "text-sm" : "text-[10px]"}`}>Showing {number(Math.min(250, recentRows.length))} of {number(recentRows.length)} matching raw rows.</p>
           </>
         )}
       </Panel>
