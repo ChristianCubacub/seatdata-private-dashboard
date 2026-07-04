@@ -33,6 +33,12 @@ type HistogramPoint = {
 };
 
 const COLORS = ["#ffb43d", "#b06cff", "#4dd6c4", "#ff5d8f", "#7d9cff", "#6ee787", "#ffd166", "#c792ea", "#f78c6c", "#9c96b3"];
+const ZONE_COLORS: Record<string, string> = {
+  Floor: "#ffb43d", Lower: "#b06cff", Upper: "#4dd6c4", Club: "#ff5d8f",
+  "Club Lexus": "#7d9cff", "Corona Beach House": "#6ee787", "Club Suite": "#ffd166",
+  "Loge Box": "#c792ea", Suite: "#f78c6c",
+};
+const zColor = (zone: string, index: number) => ZONE_COLORS[zone] ?? COLORS[index % COLORS.length];
 const C = { amber: "#ffb43d", violet: "#b06cff", teal: "#4dd6c4", hot: "#ff5d8f", muted: "#9c96b3" };
 const tooltipStyle = { backgroundColor: "#0d0b16", border: "1px solid rgba(255,255,255,.12)", borderRadius: "8px", color: "#f4f1f7", fontFamily: "monospace", fontSize: "11px" };
 
@@ -348,7 +354,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                 <XAxis dataKey="bucket" tick={{ fill: C.muted, fontSize: 9 }} tickLine={false} axisLine={{ stroke: "rgba(255,255,255,.09)" }} minTickGap={18} />
                 <YAxis domain={histMode === "cdf" ? [0, 100] : undefined} tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(value) => histMode === "cdf" ? value + "%" : String(value)} />
                 <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-                {histMode === "bars" && (byZone ? allZones.map((zone, index) => <Bar key={zone} dataKey={zone} name={zone} stackId="zones" fill={COLORS[index % COLORS.length]} />) : <Bar dataKey="total" name="Sales rows" fill={C.violet} radius={[3, 3, 0, 0]} />)}
+                {histMode === "bars" && (byZone ? allZones.map((zone, index) => <Bar key={zone} dataKey={zone} name={zone} stackId="zones" fill={zColor(zone, index)} />) : <Bar dataKey="total" name="Sales rows" fill={C.violet} radius={[3, 3, 0, 0]} />)}
                 {histMode === "cdf" && <Line type="monotone" dataKey="cumulative" name="At or below" stroke={C.teal} strokeWidth={2.5} dot={false} />}
                 {showThreshold && thresholdBucket && <ReferenceLine x={thresholdBucket.bucket} stroke={C.hot} strokeDasharray="4 3" label={{ value: money(threshold), fill: C.hot, fontSize: 10 }} />}
                 {showStats && statisticBuckets.average && <ReferenceLine x={statisticBuckets.average} stroke={C.violet} strokeDasharray="3 3" />}
