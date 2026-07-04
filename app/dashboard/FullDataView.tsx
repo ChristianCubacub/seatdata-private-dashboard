@@ -71,6 +71,34 @@ const zonedYMD = (time: number, timeZone: string) => {
   return { year: Number(map.year), month: Number(map.month), day: Number(map.day) };
 };
 
+const ROW_RANGE_BUCKETS = [
+  { label: "Rows 1-5", min: 1, max: 5 },
+  { label: "Rows 6-10", min: 6, max: 10 },
+  { label: "Rows 11-15", min: 11, max: 15 },
+  { label: "Rows 16+", min: 16, max: Infinity },
+];
+const UNPARSED_ROW_LABEL = "Unparsed rows";
+
+function parseRowPosition(rawRow: string): number | null {
+  const trimmed = rawRow.trim();
+  if (!trimmed || trimmed === "—") return null;
+  if (/^\d+$/.test(trimmed)) return Number(trimmed);
+  if (/^[A-Za-z]+$/.test(trimmed)) {
+    let value = 0;
+    for (const char of trimmed.toUpperCase()) value = value * 26 + (char.charCodeAt(0) - 64);
+    return value;
+  }
+  const match = trimmed.match(/\d+/);
+  return match ? Number(match[0]) : null;
+}
+
+function rowRangeLabel(rawRow: string): string {
+  const position = parseRowPosition(rawRow);
+  if (position === null) return UNPARSED_ROW_LABEL;
+  const bucket = ROW_RANGE_BUCKETS.find((entry) => position >= entry.min && position <= entry.max);
+  return bucket ? bucket.label : UNPARSED_ROW_LABEL;
+}
+
 function Segments<T extends string | number>({ values, value, onChange, labels }: {
   values: readonly T[]; value: T; onChange: (value: T) => void; labels?: Partial<Record<T, string>>;
 }) {
@@ -184,6 +212,34 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
       tickets: group.reduce((sum, row) => sum + row.quantity, 0),
     };
   }).filter((row) => row.sales), [allZones, filtered]);
+
+  const rowRangeStats = useMemo(() => {
+    const order = [...ROW_RANGE_BUCKETS.map((bucket) => bucket.label), UNPARSED_ROW_LABEL];
+    const groups = new Map<string, SaleRow[]>();
+    for (const row of filtered) {
+      const label = rowRangeLabel(row.row);
+      groups.set(label, [...(groups.get(label) ?? []), row]);
+    }
+    return order
+      .filter((label) => groups.has(label))
+      .map((label) => {
+        const group = groups.get(label)!;
+        const prices = group.map((row) => row.price);
+        const averagePrice = prices.length ? prices.reduce((sum, price) => sum + price, 0) / prices.length : 0;
+        return {
+          range: label,
+          minPrice: prices.length ? Math.min(...prices) : 0,
+          medianPrice: median(prices),
+          averagePrice,
+          sales: group.length,
+          tickets: group.reduce((sum, row) => sum + row.quantity, 0),
+        };
+      });
+  }, [filtered]);
+  const [rowRangeMetric, setRowRangeMetric] = useState<"min" | "median" | "average">("median");
+  const rowRangeMetricKey = rowRangeMetric === "min" ? "minPrice" : rowRangeMetric === "average" ? "averagePrice" : "medianPrice";
+  const rowRangeMetricLabel = rowRangeMetric === "min" ? "Minimum" : rowRangeMetric === "average" ? "Average" : "Median";
+  const maxRowRangeSales = Math.max(1, ...rowRangeStats.map((entry) => entry.sales));
 
   const [zoneMetric, setZoneMetric] = useState<"min" | "median" | "average">("median");
   const zoneMetricKey = zoneMetric === "min" ? "minPrice" : zoneMetric === "average" ? "averagePrice" : "medianPrice";
@@ -489,6 +545,30 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
           )}
         </Panel>
       </div>
+
+      <Panel
+        title="Price by row range"
+        hint={`length = ${rowRangeMetricLabel.toLowerCase()} · shade = sales volume · any section, pooled by row position`}
+        controls={<Segments values={["min", "median", "average"] as const} value={rowRangeMetric} onChange={setRowRangeMetric} labels={{ min: "Min", median: "Median", average: "Average" }} />}
+      >
+        {(maximized) => (
+          <div className={maximized ? "mt-4 h-[70vh]" : "mt-4 h-[320px]"}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={rowRangeStats} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
+                <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
+                <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
+                <YAxis type="category" dataKey="range" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
+                <Bar dataKey={rowRangeMetricKey} name={`${rowRangeMetricLabel} price`} radius={[0, 4, 4, 0]} activeBar={false}>
+                  {rowRangeStats.map((entry) => (
+                    <Cell key={entry.range} fill={C.teal} fillOpacity={0.35 + 0.55 * (entry.sales / maxRowRangeSales)} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </Panel>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel
