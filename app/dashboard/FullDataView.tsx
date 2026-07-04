@@ -337,7 +337,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                     <YAxis yAxisId="sales" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
                     <YAxis yAxisId="price" orientation="right" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
                     <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-                    {series.tickets && <Bar yAxisId="sales" dataKey="ticketsSold" name="Tickets sold" fill={C.violet} radius={[3, 3, 0, 0]} />}
+                    {series.tickets && <Bar yAxisId="sales" dataKey="ticketsSold" name="Tickets sold" fill={C.violet} radius={[3, 3, 0, 0]} activeBar={false} />}
                     {series.median && <Line yAxisId="price" type="linear" dataKey="medianPrice" name="Median price" stroke={C.teal} strokeWidth={2.4} dot={false} />}
                     {series.getIn && <Line yAxisId="price" type="linear" dataKey="getInPrice" name="Get-in price" stroke={C.amber} strokeWidth={2.4} dot={false} />}
                   </ComposedChart>
@@ -359,7 +359,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                   <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
                   <YAxis type="category" dataKey="zone" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-                  <Bar dataKey="medianPrice" name="Median price" fill={C.amber} radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="medianPrice" name="Median price" fill={C.amber} radius={[0, 4, 4, 0]} activeBar={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -404,9 +404,9 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                     <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
                     {histMode === "bars" && (byZone
                       ? (isolatedZone ? [isolatedZone] : allZones).map((zone) => (
-                          <Bar key={zone} dataKey={zone} name={zone} stackId="zones" fill={zColor(zone, allZones.indexOf(zone))} />
+                          <Bar key={zone} dataKey={zone} name={zone} stackId="zones" fill={zColor(zone, allZones.indexOf(zone))} activeBar={false} />
                         ))
-                      : <Bar dataKey="total" name="Sales rows" fill={C.violet} radius={[3, 3, 0, 0]} />)}
+                      : <Bar dataKey="total" name="Sales rows" fill={C.violet} radius={[3, 3, 0, 0]} activeBar={false} />)}
                     {histMode === "cdf" && <Line type="monotone" dataKey="cumulative" name="At or below" stroke={C.teal} strokeWidth={2.5} dot={false} />}
                     {showThreshold && thresholdBucket && <ReferenceLine x={thresholdBucket.bucket} stroke={C.hot} strokeDasharray="4 3" label={{ value: money(threshold), fill: C.hot, fontSize: maximized ? 14 : 10 }} />}
                     {showStats && statisticBuckets.average && <ReferenceLine x={statisticBuckets.average} stroke={C.violet} strokeDasharray="3 3" />}

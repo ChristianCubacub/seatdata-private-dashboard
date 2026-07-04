@@ -388,7 +388,7 @@ export default function DashboardPage() {
                           <YAxis yAxisId="tickets" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={compact} />
                           <YAxis yAxisId="price" orientation="right" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => `$${compact(value)}`} />
                           <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-                          <Bar yAxisId="tickets" dataKey="ticketsSold" name="Tickets sold" fill={C.violet} radius={[3, 3, 0, 0]} />
+                          <Bar yAxisId="tickets" dataKey="ticketsSold" name="Tickets sold" fill={C.violet} radius={[3, 3, 0, 0]} activeBar={false} />
                           <Line yAxisId="price" type="linear" dataKey="averagePrice" name="Average price" stroke={C.teal} strokeWidth={2.5} dot={false} />
                         </ComposedChart>
                       </ResponsiveContainer>
@@ -410,7 +410,7 @@ export default function DashboardPage() {
                         <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => `$${compact(value)}`} />
                         <YAxis type="category" dataKey="zone" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
                         <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-                        <Bar dataKey="averagePrice" name="Average price" fill={C.amber} radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="averagePrice" name="Average price" fill={C.amber} radius={[0, 4, 4, 0]} activeBar={false} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -455,7 +455,7 @@ export default function DashboardPage() {
                         <XAxis dataKey="bucket" tick={axisTick(maximized, 9)} tickLine={false} axisLine={{ stroke: "rgba(255,255,255,.09)" }} interval={0} angle={-25} textAnchor="end" height={58} />
                         <YAxis tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={compact} />
                         <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-                        <Bar dataKey="ticketsSold" name="Tickets sold" fill={C.violet} radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="ticketsSold" name="Tickets sold" fill={C.violet} radius={[4, 4, 0, 0]} activeBar={false} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
