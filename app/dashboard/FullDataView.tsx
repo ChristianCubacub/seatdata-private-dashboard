@@ -405,7 +405,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
         </Panel>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.62fr_1fr]">
+      <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Recent sales" hint="follows the Window filter · click a header to sort" controls={<Segments values={[1, 3, 14, 30, 90, 180, "all"] as const} value={windowValue} onChange={setWindowValue} labels={{ 1: "1d", 3: "3d", 14: "14d", 30: "30d", 90: "3mo", 180: "6mo", all: "All" }} />}>
           {(maximized) => (
             <>
