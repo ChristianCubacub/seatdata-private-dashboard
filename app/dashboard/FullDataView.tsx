@@ -222,6 +222,32 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
     bottom15: "bottom 15", bottomHalf: "bottom half",
   };
 
+  const [daysOutSeries, setDaysOutSeries] = useState({ tickets: true, getIn: true, median: true, average: false });
+  const daysOutStats = useMemo(() => {
+    const buckets = [
+      { label: "30+ days", min: 30, max: Infinity },
+      { label: "15-29 days", min: 15, max: 29 },
+      { label: "8-14 days", min: 8, max: 14 },
+      { label: "4-7 days", min: 4, max: 7 },
+      { label: "2-3 days", min: 2, max: 3 },
+      { label: "Day of/before", min: 0, max: 1 },
+    ];
+    return buckets.map((bucket) => {
+      const group = filtered.filter((row) => {
+        const daysOut = (maxTime - row.timestamp) / day;
+        return daysOut >= bucket.min && daysOut <= bucket.max;
+      });
+      const prices = group.map((row) => row.price);
+      return {
+        bucket: bucket.label,
+        tickets: group.reduce((sum, row) => sum + row.quantity, 0),
+        getIn: prices.length ? Math.min(...prices) : 0,
+        median: median(prices),
+        average: prices.length ? prices.reduce((sum, price) => sum + price, 0) / prices.length : 0,
+      };
+    });
+  }, [filtered, maxTime]);
+
   const histogramZones = useMemo(() => {
     const salesByZone = new Map(zoneStats.map((entry) => [entry.zone, entry.sales]));
     return allZones
@@ -547,6 +573,40 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                 <thead><tr className={`uppercase tracking-[.1em] text-[#9c96b3] ${maximized ? "text-base" : "text-[10px]"}`}><th className="border-b border-white/10 px-3 py-2 text-left">Metric</th>{trendRows[0]?.values.map((value, index) => <th key={index} className="border-b border-white/10 px-3 py-2 text-center">{value.days}d</th>)}</tr></thead>
                 <tbody>{trendRows.map((metric) => <tr key={metric.kind}><td className="border-b border-white/[.045] px-3 py-3 font-semibold">{metric.label}</td>{metric.values.map((value, index) => <td key={index} title={value.available ? money(value.before) + " → " + money(value.now) : "Not enough data in both periods"} className="border-b border-white/[.045] px-3 py-3 text-center font-mono font-bold">{value.available ? <span className={value.delta > 0 ? "text-[#ff5d8f]" : value.delta < 0 ? "text-[#4dd6c4]" : "text-[#9c96b3]"}>{value.delta > 0 ? "▲ " : value.delta < 0 ? "▼ " : ""}{trendMode === "pct" ? Math.abs(value.delta).toFixed(1) + "%" : money(Math.abs(value.delta))}</span> : <span className="font-normal text-[#5f5972]">—</span>}</td>)}</tr>)}</tbody>
               </table>
+            </div>
+          </>
+        )}
+      </Panel>
+
+      <Panel title="Price vs. days until event" hint="anchored to the latest recorded sale (est. event date) · respects the top filters">
+        {(maximized) => (
+          <>
+            <div className={maximized ? "mt-4 h-[70vh]" : "mt-4 h-[320px]"}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={daysOutStats} margin={{ right: maximized ? 40 : 20 }}>
+                  <CartesianGrid stroke="rgba(255,255,255,.055)" vertical={false} />
+                  <XAxis dataKey="bucket" tick={axisTick(maximized, 10)} tickLine={false} axisLine={{ stroke: "rgba(255,255,255,.09)" }} />
+                  <YAxis yAxisId="tickets" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={number} />
+                  <YAxis yAxisId="price" orientation="right" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
+                  <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
+                  {daysOutSeries.tickets && <Bar yAxisId="tickets" dataKey="tickets" name="Tickets sold" fill={C.violet} radius={[3, 3, 0, 0]} activeBar={false} />}
+                  {daysOutSeries.getIn && <Line yAxisId="price" type="linear" dataKey="getIn" name="Get-in price" stroke={C.amber} strokeWidth={2.4} dot={false} />}
+                  {daysOutSeries.median && <Line yAxisId="price" type="linear" dataKey="median" name="Median price" stroke={C.teal} strokeWidth={2.4} dot={false} />}
+                  {daysOutSeries.average && <Line yAxisId="price" type="linear" dataKey="average" name="Average price" stroke={C.hot} strokeWidth={2.4} dot={false} />}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+            <div className={`mt-2 flex flex-wrap gap-2 font-mono ${maximized ? "text-sm" : "text-[10px]"}`}>
+              {(["tickets", "getIn", "median", "average"] as const).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => setDaysOutSeries((current) => ({ ...current, [key]: !current[key] }))}
+                  className={`rounded-md border px-2 py-1 ${daysOutSeries[key] ? "border-white/10 text-white" : "border-transparent text-[#5f5972]"}`}
+                >
+                  <i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style={{ background: key === "tickets" ? C.violet : key === "getIn" ? C.amber : key === "median" ? C.teal : C.hot }} />
+                  {key === "tickets" ? "Tickets sold" : key === "getIn" ? "Get-in $/tix" : key === "median" ? "Median $/tix" : "Average $/tix"}
+                </button>
+              ))}
             </div>
           </>
         )}
