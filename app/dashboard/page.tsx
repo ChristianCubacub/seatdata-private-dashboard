@@ -405,7 +405,7 @@ export default function DashboardPage() {
                 {(maximized) => (
                   <div className={maximized ? "mt-4 h-[70vh]" : "mt-4 h-[320px]"}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={zoneRows.slice(0, 10)} layout="vertical" margin={{ left: 6, right: 18 }}>
+                      <BarChart data={zoneRows.slice(0, 10)} layout="vertical" margin={{ left: 6, right: maximized ? 50 : 32 }}>
                         <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
                         <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => `$${compact(value)}`} />
                         <YAxis type="category" dataKey="zone" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
