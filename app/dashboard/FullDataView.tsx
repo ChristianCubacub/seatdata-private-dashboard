@@ -115,6 +115,8 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
   const [zones, setZones] = useState<Set<string>>(new Set());
   const [windowValue, setWindowValue] = useState<WindowValue>("all");
   const [includeZero, setIncludeZero] = useState(true);
+  const [smoothLines, setSmoothLines] = useState(false);
+  const lineType = smoothLines ? "monotone" : "linear";
   const [capOutliers, setCapOutliers] = useState(true);
   const [outlierCutoff, setOutlierCutoff] = useState(3000);
   const [granularity, setGranularity] = useState<Granularity>("day");
@@ -356,7 +358,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
     setter((current) => ({ key, direction: current.key === key ? (current.direction * -1) as 1 | -1 : key === "timestamp" ? -1 : 1 }));
   }
   function reset() {
-    setZones(new Set()); setWindowValue("all"); setIncludeZero(true); setCapOutliers(true); setOutlierCutoff(3000); setGranularity("day");
+    setZones(new Set()); setWindowValue("all"); setIncludeZero(true); setSmoothLines(false); setCapOutliers(true); setOutlierCutoff(3000); setGranularity("day");
     setSeries({ tickets: true, median: true, getIn: true }); setHistMode("bars"); setBinSize("auto");
     setShowThreshold(false); setByZone(true); setShowStats(false); setTrendRespectWindow(false);
     setIsolatedZone(null);
@@ -380,6 +382,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
         </div>
         <div className="flex flex-wrap items-center gap-5 border-t border-dashed border-white/10 pt-4">
           <Toggle checked={includeZero} onChange={setIncludeZero} label="Include Qty = 0 rows" />
+          <Toggle checked={smoothLines} onChange={setSmoothLines} label="Smooth graph lines" />
           <div className="flex items-center gap-2">
             <Toggle checked={capOutliers} onChange={setCapOutliers} label="Cap outliers over" />
             <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-[#221d3a] px-2 py-1">
@@ -441,8 +444,8 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                     <YAxis yAxisId="price" orientation="right" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
                     <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
                     {series.tickets && <Bar yAxisId="sales" dataKey="ticketsSold" name="Tickets sold" fill={C.violet} radius={[3, 3, 0, 0]} activeBar={false} />}
-                    {series.median && <Line yAxisId="price" type="linear" dataKey="medianPrice" name="Median price" stroke={C.teal} strokeWidth={2.4} dot={false} />}
-                    {series.getIn && <Line yAxisId="price" type="linear" dataKey="getInPrice" name="Get-in price" stroke={C.amber} strokeWidth={2.4} dot={false} />}
+                    {series.median && <Line yAxisId="price" type={lineType} dataKey="medianPrice" name="Median price" stroke={C.teal} strokeWidth={2.4} dot={false} />}
+                    {series.getIn && <Line yAxisId="price" type={lineType} dataKey="getInPrice" name="Get-in price" stroke={C.amber} strokeWidth={2.4} dot={false} />}
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -594,9 +597,9 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                   <YAxis yAxisId="price" orientation="right" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
                   <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
                   {daysOutSeries.tickets && <Bar yAxisId="tickets" dataKey="tickets" name="Tickets sold" fill={C.violet} radius={[3, 3, 0, 0]} activeBar={false} />}
-                  {daysOutSeries.getIn && <Line yAxisId="price" type="linear" dataKey="getIn" name="Get-in price" stroke={C.amber} strokeWidth={2.4} dot={false} />}
-                  {daysOutSeries.median && <Line yAxisId="price" type="linear" dataKey="median" name="Median price" stroke={C.teal} strokeWidth={2.4} dot={false} />}
-                  {daysOutSeries.average && <Line yAxisId="price" type="linear" dataKey="average" name="Average price" stroke={C.hot} strokeWidth={2.4} dot={false} />}
+                  {daysOutSeries.getIn && <Line yAxisId="price" type={lineType} dataKey="getIn" name="Get-in price" stroke={C.amber} strokeWidth={2.4} dot={false} />}
+                  {daysOutSeries.median && <Line yAxisId="price" type={lineType} dataKey="median" name="Median price" stroke={C.teal} strokeWidth={2.4} dot={false} />}
+                  {daysOutSeries.average && <Line yAxisId="price" type={lineType} dataKey="average" name="Average price" stroke={C.hot} strokeWidth={2.4} dot={false} />}
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
