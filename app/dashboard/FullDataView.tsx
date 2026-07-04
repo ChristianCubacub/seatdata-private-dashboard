@@ -241,20 +241,32 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
   const rowRangeMetricLabel = rowRangeMetric === "min" ? "Minimum" : rowRangeMetric === "average" ? "Average" : "Median";
   const maxRowRangeSales = Math.max(1, ...rowRangeStats.map((entry) => entry.sales));
   const [rowRangeByZone, setRowRangeByZone] = useState(false);
-  const rowRangeHistogram = useMemo(() => {
+  const [rowRangeZoneMetric, setRowRangeZoneMetric] = useState<"count" | "tickets" | "revenue">("count");
+  const rowRangeHistogramByMetric = useMemo(() => {
     const order = [...ROW_RANGE_BUCKETS.map((bucket) => bucket.label), UNPARSED_ROW_LABEL];
-    const bucketMap = new Map<string, { range: string; total: number; [zone: string]: string | number }>(
-      order.map((label) => [label, { range: label, total: 0 }])
-    );
+    type Bucket = { range: string; total: number; [zone: string]: string | number };
+    const makeMap = () => new Map<string, Bucket>(order.map((label) => [label, { range: label, total: 0 }]));
+    const countMap = makeMap();
+    const ticketsMap = makeMap();
+    const revenueMap = makeMap();
     for (const row of filtered) {
       const label = rowRangeLabel(row.row);
-      const bucket = bucketMap.get(label);
-      if (!bucket) continue;
-      bucket.total = Number(bucket.total) + 1;
-      bucket[row.zone] = Number(bucket[row.zone] ?? 0) + 1;
+      const countBucket = countMap.get(label);
+      const ticketsBucket = ticketsMap.get(label);
+      const revenueBucket = revenueMap.get(label);
+      if (!countBucket || !ticketsBucket || !revenueBucket) continue;
+      countBucket.total = Number(countBucket.total) + 1;
+      countBucket[row.zone] = Number(countBucket[row.zone] ?? 0) + 1;
+      ticketsBucket.total = Number(ticketsBucket.total) + row.quantity;
+      ticketsBucket[row.zone] = Number(ticketsBucket[row.zone] ?? 0) + row.quantity;
+      const revenue = row.quantity * row.price;
+      revenueBucket.total = Number(revenueBucket.total) + revenue;
+      revenueBucket[row.zone] = Number(revenueBucket[row.zone] ?? 0) + revenue;
     }
-    return order.filter((label) => Number(bucketMap.get(label)!.total) > 0).map((label) => bucketMap.get(label)!);
+    const build = (map: Map<string, Bucket>) => order.filter((label) => Number(map.get(label)!.total) > 0).map((label) => map.get(label)!);
+    return { count: build(countMap), tickets: build(ticketsMap), revenue: build(revenueMap) };
   }, [filtered]);
+  const rowRangeHistogram = rowRangeHistogramByMetric[rowRangeZoneMetric];
   const rowRangeChartData: Record<string, string | number>[] = rowRangeByZone ? rowRangeHistogram : rowRangeStats;
 
   const [zoneMetric, setZoneMetric] = useState<"min" | "median" | "average">("median");
@@ -565,9 +577,11 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
       <Panel
         title="Price by row range"
         hint={rowRangeByZone
-          ? "sales count by zone · any section, pooled by row position"
+          ? `${rowRangeZoneMetric === "revenue" ? "gross revenue" : rowRangeZoneMetric === "tickets" ? "tickets sold" : "sales count"} by zone · any section, pooled by row position`
           : `length = ${rowRangeMetricLabel.toLowerCase()} · shade = sales volume · any section, pooled by row position`}
-        controls={rowRangeByZone ? undefined : <Segments values={["min", "median", "average"] as const} value={rowRangeMetric} onChange={setRowRangeMetric} labels={{ min: "Min", median: "Median", average: "Average" }} />}
+        controls={rowRangeByZone
+          ? <Segments values={["count", "tickets", "revenue"] as const} value={rowRangeZoneMetric} onChange={setRowRangeZoneMetric} labels={{ count: "Count", tickets: "Tickets", revenue: "$" }} />
+          : <Segments values={["min", "median", "average"] as const} value={rowRangeMetric} onChange={setRowRangeMetric} labels={{ min: "Min", median: "Median", average: "Average" }} />}
       >
         {(maximized) => (
           <>
@@ -575,7 +589,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={rowRangeChartData} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
                   <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
-                  <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={rowRangeByZone ? number : (value) => `$${number(value)}`} />
+                  <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={rowRangeByZone && rowRangeZoneMetric !== "revenue" ? number : (value) => `$${number(value)}`} />
                   <YAxis type="category" dataKey="range" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
                   {rowRangeByZone ? (
