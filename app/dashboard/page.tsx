@@ -290,7 +290,7 @@ export default function DashboardPage() {
                       <YAxis yAxisId="price" orientation="right" tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(value) => `$${compact(value)}`} />
                       <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
                       <Bar yAxisId="tickets" dataKey="ticketsSold" name="Tickets sold" fill={C.violet} radius={[3, 3, 0, 0]} />
-                      <Line yAxisId="price" type="monotone" dataKey="averagePrice" name="Average price" stroke={C.teal} strokeWidth={2.5} dot={false} />
+                      <Line yAxisId="price" type="linear" dataKey="averagePrice" name="Average price" stroke={C.teal} strokeWidth={2.5} dot={false} />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>

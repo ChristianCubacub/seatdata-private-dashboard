@@ -300,8 +300,8 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                 <YAxis yAxisId="price" orientation="right" tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
                 <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
                 {series.tickets && <Bar yAxisId="sales" dataKey="ticketsSold" name="Tickets sold" fill={C.violet} radius={[3, 3, 0, 0]} />}
-                {series.median && <Line yAxisId="price" type="monotone" dataKey="medianPrice" name="Median price" stroke={C.teal} strokeWidth={2.4} dot={false} />}
-                {series.getIn && <Line yAxisId="price" type="monotone" dataKey="getInPrice" name="Get-in price" stroke={C.amber} strokeWidth={2.4} dot={false} />}
+                {series.median && <Line yAxisId="price" type="linear" dataKey="medianPrice" name="Median price" stroke={C.teal} strokeWidth={2.4} dot={false} />}
+                {series.getIn && <Line yAxisId="price" type="linear" dataKey="getInPrice" name="Get-in price" stroke={C.amber} strokeWidth={2.4} dot={false} />}
               </ComposedChart>
             </ResponsiveContainer>
           </div>
