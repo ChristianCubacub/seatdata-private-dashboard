@@ -162,6 +162,11 @@ export default function DashboardPage() {
 
   function resetFilters() { setWindow("all"); setZones(new Set()); }
 
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    globalThis.location.assign("/login");
+  }
+
   async function importEvent() {
     const id = eventId.trim();
     if (!id) { setStatus("Enter a SeatData event ID first."); return; }
@@ -213,6 +218,9 @@ export default function DashboardPage() {
               </button>
               <button onClick={() => loadDashboard()} disabled={loading} className="rounded-lg border border-white/10 px-4 py-2.5 text-xs font-semibold text-[#9c96b3] transition hover:border-[#4dd6c4] hover:text-white disabled:opacity-50">
                 Load cached
+              </button>
+              <button onClick={logout} className="rounded-lg border border-white/10 px-4 py-2.5 text-xs font-semibold text-[#9c96b3] transition hover:border-[#ff5d8f] hover:text-white">
+                Sign out
               </button>
             </div>
           </div>
