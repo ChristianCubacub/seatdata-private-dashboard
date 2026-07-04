@@ -85,7 +85,10 @@ function Segments<T extends string | number>({ values, value, onChange, labels }
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (checked: boolean) => void; label: string }) {
   return (
     <label className="flex cursor-pointer items-center gap-2 text-xs text-[#9c96b3]">
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 accent-[#4dd6c4]" />
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="peer sr-only" />
+      <span className="relative h-[19px] w-[34px] shrink-0 rounded-full bg-[#2f2a45] transition-colors duration-200 peer-checked:bg-[#4dd6c4]">
+        <span className="absolute left-[2px] top-[2px] h-[15px] w-[15px] rounded-full bg-white transition-transform duration-200 peer-checked:translate-x-[15px]" />
+      </span>
       <span className={checked ? "text-white" : ""}>{label}</span>
     </label>
   );
@@ -118,6 +121,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
   const [showThreshold, setShowThreshold] = useState(false);
   const [threshold, setThreshold] = useState(500);
   const [byZone, setByZone] = useState(true);
+  const [isolatedZone, setIsolatedZone] = useState<string | null>(null);
   const [showStats, setShowStats] = useState(false);
   const [search, setSearch] = useState("");
   const [minPrice, setMinPrice] = useState("");
@@ -160,6 +164,17 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
     const group = filtered.filter((row) => row.zone === zone);
     return { zone, medianPrice: median(group.map((row) => row.price)), sales: group.length, tickets: group.reduce((sum, row) => sum + row.quantity, 0) };
   }).filter((row) => row.sales).sort((a, b) => a.medianPrice - b.medianPrice), [allZones, filtered]);
+
+  const histogramZones = useMemo(() => {
+    const salesByZone = new Map(zoneStats.map((entry) => [entry.zone, entry.sales]));
+    return allZones
+      .map((zone, index) => ({ zone, color: zColor(zone, index), sales: salesByZone.get(zone) ?? 0 }))
+      .filter((entry) => entry.sales > 0);
+  }, [allZones, zoneStats]);
+
+  function toggleIsolateZone(zone: string) {
+    setIsolatedZone((current) => (current === zone ? null : zone));
+  }
 
   const summary = useMemo(() => {
     const prices = filtered.map((row) => row.price);
@@ -250,6 +265,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
     setZones(new Set()); setWindowValue("all"); setIncludeZero(true); setCapOutliers(true); setGranularity("day");
     setSeries({ tickets: true, median: true, getIn: true }); setHistMode("bars"); setBinSize("auto");
     setShowThreshold(false); setByZone(true); setShowStats(false); setTrendRespectWindow(false);
+    setIsolatedZone(null);
   }
 
   return (
@@ -356,7 +372,11 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                 <XAxis dataKey="bucket" tick={{ fill: C.muted, fontSize: 9 }} tickLine={false} axisLine={{ stroke: "rgba(255,255,255,.09)" }} minTickGap={18} />
                 <YAxis domain={histMode === "cdf" ? [0, 100] : undefined} tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(value) => histMode === "cdf" ? value + "%" : String(value)} />
                 <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-                {histMode === "bars" && (byZone ? allZones.map((zone, index) => <Bar key={zone} dataKey={zone} name={zone} stackId="zones" fill={zColor(zone, index)} />) : <Bar dataKey="total" name="Sales rows" fill={C.violet} radius={[3, 3, 0, 0]} />)}
+                {histMode === "bars" && (byZone
+                  ? (isolatedZone ? [isolatedZone] : allZones).map((zone) => (
+                      <Bar key={zone} dataKey={zone} name={zone} stackId="zones" fill={zColor(zone, allZones.indexOf(zone))} />
+                    ))
+                  : <Bar dataKey="total" name="Sales rows" fill={C.violet} radius={[3, 3, 0, 0]} />)}
                 {histMode === "cdf" && <Line type="monotone" dataKey="cumulative" name="At or below" stroke={C.teal} strokeWidth={2.5} dot={false} />}
                 {showThreshold && thresholdBucket && <ReferenceLine x={thresholdBucket.bucket} stroke={C.hot} strokeDasharray="4 3" label={{ value: money(threshold), fill: C.hot, fontSize: 10 }} />}
                 {showStats && statisticBuckets.average && <ReferenceLine x={statisticBuckets.average} stroke={C.violet} strokeDasharray="3 3" />}
@@ -364,6 +384,20 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
               </ComposedChart>
             </ResponsiveContainer>
           </div>
+          {histMode === "bars" && byZone && histogramZones.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2 font-mono text-[10px]">
+              {histogramZones.map((entry) => (
+                <button
+                  key={entry.zone}
+                  onClick={() => toggleIsolateZone(entry.zone)}
+                  className={`rounded-md border px-2 py-1 transition ${isolatedZone && isolatedZone !== entry.zone ? "border-transparent text-[#5f5972]" : "border-white/10 text-white"}`}
+                >
+                  <i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style={{ background: entry.color }} />
+                  {entry.zone} ({number(entry.sales)})
+                </button>
+              ))}
+            </div>
+          )}
           {showThreshold && <label className="mt-2 block font-mono text-[10px] text-[#9c96b3]">Threshold: {money(threshold)}<input type="range" min="0" max={Math.max(500, Math.ceil(Math.max(0, ...filtered.map((row) => row.price)) / 100) * 100)} step="50" value={threshold} onChange={(event) => setThreshold(Number(event.target.value))} className="mt-1 w-full accent-[#ff5d8f]" /></label>}
           <div className="mt-3 flex flex-wrap gap-4">
             <Toggle checked={showThreshold} onChange={setShowThreshold} label="Threshold line" />
