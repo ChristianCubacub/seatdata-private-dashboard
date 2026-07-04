@@ -44,7 +44,11 @@ export default function Panel({
     setDownloading(true);
     try {
       const { toPng } = await import("html-to-image");
-      const dataUrl = await toPng(nodeRef.current, { backgroundColor: "#1b1830", pixelRatio: 2 });
+      const dataUrl = await toPng(nodeRef.current, {
+        backgroundColor: "#1b1830",
+        pixelRatio: 2,
+        filter: (domNode) => !(domNode instanceof HTMLElement && domNode.dataset.exportIgnore === "true"),
+      });
       const link = document.createElement("a");
       link.href = dataUrl;
       link.download = `${slugify(title)}.png`;
@@ -71,22 +75,24 @@ export default function Panel({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {controls}
-          <button
-            onClick={downloadPng}
-            disabled={downloading}
-            className="rounded-md border border-white/10 px-2 py-1 text-[10px] font-semibold text-[#9c96b3] transition hover:border-[#4dd6c4] hover:text-white disabled:opacity-50"
-          >
-            {downloading ? "Saving…" : "⬇ PNG"}
-          </button>
-          {maximized && (
+          <div className="flex items-center gap-2" data-export-ignore="true">
             <button
-              onClick={() => setMaximized(false)}
-              title="Close (Esc)"
-              className="rounded-md border border-white/10 px-2 py-1 text-xs text-[#9c96b3] transition hover:border-[#ff5d8f] hover:text-white"
+              onClick={downloadPng}
+              disabled={downloading}
+              className="rounded-md border border-white/10 px-2 py-1 text-[10px] font-semibold text-[#9c96b3] transition hover:border-[#4dd6c4] hover:text-white disabled:opacity-50"
             >
-              ✕
+              {downloading ? "Saving…" : "⬇ PNG"}
             </button>
-          )}
+            {maximized && (
+              <button
+                onClick={() => setMaximized(false)}
+                title="Close (Esc)"
+                className="rounded-md border border-white/10 px-2 py-1 text-xs text-[#9c96b3] transition hover:border-[#ff5d8f] hover:text-white"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
       </div>
       {children}
