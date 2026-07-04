@@ -14,7 +14,7 @@ type HistogramMode = "bars" | "cdf";
 type BinSize = 50 | 100 | 250 | "auto";
 type TrendMode = "pct" | "usd";
 type SortKey = "timestamp" | "zone" | "section" | "row" | "quantity" | "price";
-type SectionView = "top10" | "top15" | "top20" | "top30" | "all" | "bottom10" | "bottom15" | "bottom20" | "bottom30" | "bottomHalf";
+type SectionView = "top10" | "top15" | "top20" | "top30" | "all" | "bottom15" | "bottomHalf";
 
 type SaleRow = {
   timestamp: number;
@@ -212,17 +212,14 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
       case "top20": return sectionStatsAll.slice(0, 20);
       case "top30": return sectionStatsAll.slice(0, 30);
       case "all": return sectionStatsAll;
-      case "bottom10": return sectionStatsAll.slice(-10);
       case "bottom15": return sectionStatsAll.slice(-15);
-      case "bottom20": return sectionStatsAll.slice(-20);
-      case "bottom30": return sectionStatsAll.slice(-30);
       case "bottomHalf": return sectionStatsAll.slice(-Math.ceil(sectionStatsAll.length / 2));
       default: return sectionStatsAll;
     }
   }, [sectionStatsAll, sectionView]);
   const sectionViewLabel: Record<SectionView, string> = {
     top10: "top 10", top15: "top 15", top20: "top 20", top30: "top 30", all: "all",
-    bottom10: "bottom 10", bottom15: "bottom 15", bottom20: "bottom 20", bottom30: "bottom 30", bottomHalf: "bottom half",
+    bottom15: "bottom 15", bottomHalf: "bottom half",
   };
 
   const histogramZones = useMemo(() => {
@@ -470,7 +467,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
           controls={
             <div className="flex flex-col items-end gap-1.5">
               <Segments values={["top10", "top15", "top20", "top30", "all"] as const} value={sectionView} onChange={setSectionView} labels={{ top10: "Top 10", top15: "Top 15", top20: "Top 20", top30: "Top 30", all: "All" }} />
-              <Segments values={["bottom10", "bottom15", "bottom20", "bottom30", "bottomHalf"] as const} value={sectionView} onChange={setSectionView} labels={{ bottom10: "Bottom 10", bottom15: "Bottom 15", bottom20: "Bottom 20", bottom30: "Bottom 30", bottomHalf: "Bottom half" }} />
+              <Segments values={["bottom15", "bottomHalf"] as const} value={sectionView} onChange={setSectionView} labels={{ bottom15: "Bottom 15", bottomHalf: "Bottom half" }} />
             </div>
           }
         >
