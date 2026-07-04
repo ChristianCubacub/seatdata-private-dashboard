@@ -5,7 +5,6 @@ import { flushSync } from "react-dom";
 
 const DEFAULT_CLASSNAME =
   "min-w-0 rounded-[14px] border border-white/10 bg-[#1b1830] p-4 shadow-[0_18px_50px_rgba(0,0,0,.15)] sm:p-[18px]";
-const MAXIMIZE_SCALE = 1.4;
 
 function slugify(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "chart";
@@ -21,7 +20,7 @@ export default function Panel({
   title: string;
   hint?: string;
   controls?: ReactNode;
-  children: ReactNode;
+  children: ReactNode | ((maximized: boolean) => ReactNode);
   className?: string;
 }) {
   const [maximized, setMaximized] = useState(false);
@@ -72,11 +71,11 @@ export default function Panel({
           <h2
             onClick={() => setMaximized((current) => !current)}
             title="Click to maximize · Esc to close"
-            className="cursor-pointer select-none text-sm font-bold tracking-[.02em] transition hover:text-[#b06cff]"
+            className={`cursor-pointer select-none font-bold tracking-[.02em] transition hover:text-[#b06cff] ${maximized ? "text-2xl" : "text-sm"}`}
           >
             {title}
           </h2>
-          {hint && <p className="mt-1 text-[11px] text-[#9c96b3]">{hint}</p>}
+          {hint && <p className={`mt-1 text-[#9c96b3] ${maximized ? "text-sm" : "text-[11px]"}`}>{hint}</p>}
         </div>
         <div className={`flex flex-wrap items-center gap-2 ${exporting ? "justify-center" : ""}`}>
           {controls}
@@ -100,11 +99,7 @@ export default function Panel({
           </div>
         </div>
       </div>
-      <div
-        style={maximized ? { transform: `scale(${MAXIMIZE_SCALE})`, transformOrigin: "top left", width: `${(100 / MAXIMIZE_SCALE).toFixed(3)}%` } : undefined}
-      >
-        {children}
-      </div>
+      {typeof children === "function" ? children(maximized) : children}
     </section>
   );
 }
