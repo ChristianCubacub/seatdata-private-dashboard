@@ -56,7 +56,7 @@ const displayTime = (time: number) => new Intl.DateTimeFormat("en-US", { month: 
 
 function Panel({ title, hint, controls, children }: { title: string; hint?: string; controls?: ReactNode; children: ReactNode }) {
   return (
-    <section className="rounded-[14px] border border-white/10 bg-[#1b1830] p-[18px] shadow-[0_18px_50px_rgba(0,0,0,.15)]">
+    <section className="min-w-0 rounded-[14px] border border-white/10 bg-[#1b1830] p-[18px] shadow-[0_18px_50px_rgba(0,0,0,.15)]">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div><h2 className="text-sm font-bold tracking-[.02em]">{title}</h2>{hint && <p className="mt-1 text-[11px] text-[#9c96b3]">{hint}</p>}</div>
         {controls}

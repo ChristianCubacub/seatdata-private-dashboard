@@ -87,13 +87,13 @@ function TicketHeader({ eventId }: { eventId?: string }) {
 }
 
 export default function DashboardPage() {
-  const [eventId, setEventId] = useState("");
+  const [eventId, setEventId] = useState("1120934");
   const [data, setData] = useState<DashboardData | null>(null);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
   const [window, setWindow] = useState<DateWindow>("all");
   const [zones, setZones] = useState<Set<string>>(new Set());
-  const [view, setView] = useState<"public" | "full">("public");
+  const [view, setView] = useState<"public" | "full">("full");
   const [rawSales, setRawSales] = useState<SeatDataSale[]>([]);
   const [rawEventId, setRawEventId] = useState("");
   const [rawLoading, setRawLoading] = useState(false);
@@ -102,6 +102,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (view !== "full" || !data || rawEventId === data.eventId) return;
+    setRawLoading(true);
+    setRawError("");
     const controller = new AbortController();
     fetch("/api/dashboard/event/" + encodeURIComponent(data.eventId) + "/raw", {
       cache: "no-store",
@@ -123,11 +125,7 @@ export default function DashboardPage() {
 
   function openFullView() {
     setView("full");
-    if (data && rawEventId !== data.eventId) {
-      setRawLoading(true);
-      setRawError("");
-      setRawAttempt((current) => current + 1);
-    }
+    if (data && rawEventId !== data.eventId) setRawAttempt((current) => current + 1);
   }
 
   const daily = useMemo(() => {
@@ -191,7 +189,7 @@ export default function DashboardPage() {
       const response = await fetch(`/api/dashboard/event/${encodeURIComponent(id)}`, { cache: "no-store" });
       const result = await response.json();
       if (!response.ok) { setStatus(result.error ?? "Could not load dashboard data."); setData(null); return; }
-      setData(result); setRawSales([]); setRawEventId(""); setView("public"); resetFilters(); setStatus("Dashboard loaded.");
+      setData(result); setRawSales([]); setRawEventId(""); setView("full"); resetFilters(); setStatus("Dashboard loaded.");
     } catch { setStatus("Dashboard failed to load."); setData(null); }
     finally { setLoading(false); }
   }
