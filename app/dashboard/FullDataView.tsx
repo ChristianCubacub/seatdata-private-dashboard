@@ -332,14 +332,14 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
           <div className="mt-4 max-h-[440px] overflow-auto">
             <table className="w-full border-collapse text-left text-xs">
               <thead className="sticky top-0 z-10 bg-[#1b1830]">
-                <tr>{(["timestamp", "zone", "section", "quantity", "price"] as SortKey[]).map((key) => <th key={key} onClick={() => toggleSort(key)} className="cursor-pointer border-b border-white/10 px-1.5 py-2 text-[10px] uppercase tracking-[.1em] text-[#9c96b3] hover:text-white">{key === "timestamp" ? "When" : key === "section" ? "Sec/Row" : key === "quantity" ? "Qty" : key}<span className="ml-1 opacity-50">{recentSort.key === key ? recentSort.direction === 1 ? "▲" : "▼" : ""}</span></th>)}</tr>
+                <tr>{(["timestamp", "zone", "section", "row", "quantity", "price"] as SortKey[]).map((key) => <th key={key} onClick={() => toggleSort(key)} className="cursor-pointer border-b border-white/10 px-2 py-2 text-[10px] uppercase tracking-[.1em] text-[#9c96b3] hover:text-white">{key === "timestamp" ? "When" : key === "section" ? "Sec" : key === "quantity" ? "Qty" : key}<span className="ml-1 opacity-50">{recentSort.key === key ? recentSort.direction === 1 ? "▲" : "▼" : ""}</span></th>)}</tr>
               </thead>
               <tbody className="font-mono">
                 {recentRows.slice(0, 250).map((row, index) => <tr key={row.timestamp + "-" + index} className="hover:bg-white/[.03]">
-                  <td className="whitespace-nowrap border-b border-white/[.045] px-1.5 py-2">{displayTime(row.timestamp)}</td>
-                  <td className="border-b border-white/[.045] px-1.5 py-2"><span className="rounded-full bg-[#221d3a] px-1.5 py-1 font-sans text-[10px] text-[#b06cff]">{row.zone}</span></td>
-                  <td className="whitespace-nowrap border-b border-white/[.045] px-1.5 py-2">{row.section}/{row.row}</td>
-                  <td className="border-b border-white/[.045] px-1.5 py-2 text-right">{row.quantity}</td><td className="border-b border-white/[.045] px-1.5 py-2 text-right text-[#ffb43d]">{money(row.price)}</td>
+                  <td className="whitespace-nowrap border-b border-white/[.045] px-2 py-2">{displayTime(row.timestamp)}</td>
+                  <td className="border-b border-white/[.045] px-2 py-2"><span className="rounded-full bg-[#221d3a] px-2 py-1 font-sans text-[10px] text-[#b06cff]">{row.zone}</span></td>
+                  <td className="border-b border-white/[.045] px-2 py-2">{row.section}</td><td className="border-b border-white/[.045] px-2 py-2">{row.row}</td>
+                  <td className="border-b border-white/[.045] px-2 py-2 text-right">{row.quantity}</td><td className="border-b border-white/[.045] px-2 py-2 text-right text-[#ffb43d]">{money(row.price)}</td>
                 </tr>)}
               </tbody>
             </table>
@@ -384,14 +384,14 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
         <div className="mt-3 max-h-[520px] overflow-auto border-t border-white/10">
           <table className="w-full border-collapse text-left text-xs">
             <thead className="sticky top-0 z-10 bg-[#1b1830]">
-              <tr>{(["timestamp", "zone", "section", "quantity", "price"] as SortKey[]).map((key) => <th key={key} onClick={() => toggleSort(key, true)} className="cursor-pointer border-b border-white/10 px-1.5 py-2 text-[10px] uppercase tracking-[.1em] text-[#9c96b3] hover:text-white">{key === "timestamp" ? "When" : key === "section" ? "Sec/Row" : key === "quantity" ? "Qty" : key}<span className="ml-1 opacity-50">{explorerSort.key === key ? explorerSort.direction === 1 ? "▲" : "▼" : ""}</span></th>)}</tr>
+              <tr>{(["timestamp", "zone", "section", "row", "quantity", "price"] as SortKey[]).map((key) => <th key={key} onClick={() => toggleSort(key, true)} className="cursor-pointer border-b border-white/10 px-2 py-2 text-[10px] uppercase tracking-[.1em] text-[#9c96b3] hover:text-white">{key === "timestamp" ? "When" : key === "section" ? "Sec" : key === "quantity" ? "Qty" : key}<span className="ml-1 opacity-50">{explorerSort.key === key ? explorerSort.direction === 1 ? "▲" : "▼" : ""}</span></th>)}</tr>
             </thead>
             <tbody className="font-mono">
               {explorerRows.slice(0, 500).map((row, index) => <tr key={row.timestamp + "-explorer-" + index} className="hover:bg-white/[.03]">
-                <td className="whitespace-nowrap border-b border-white/[.045] px-1.5 py-2">{displayTime(row.timestamp)}</td>
-                <td className="border-b border-white/[.045] px-1.5 py-2"><span className="rounded-full bg-[#221d3a] px-1.5 py-1 font-sans text-[10px] text-[#b06cff]">{row.zone}</span></td>
-                <td className="whitespace-nowrap border-b border-white/[.045] px-1.5 py-2">{row.section}/{row.row}</td>
-                <td className="border-b border-white/[.045] px-1.5 py-2 text-right">{row.quantity}</td><td className={"border-b border-white/[.045] px-1.5 py-2 text-right " + (row.price > 2500 ? "font-bold text-[#ff5d8f]" : "text-[#ffb43d]")}>{money(row.price)}</td>
+                <td className="whitespace-nowrap border-b border-white/[.045] px-2 py-2">{displayTime(row.timestamp)}</td>
+                <td className="border-b border-white/[.045] px-2 py-2"><span className="rounded-full bg-[#221d3a] px-2 py-1 font-sans text-[10px] text-[#b06cff]">{row.zone}</span></td>
+                <td className="border-b border-white/[.045] px-2 py-2">{row.section}</td><td className="border-b border-white/[.045] px-2 py-2">{row.row}</td>
+                <td className="border-b border-white/[.045] px-2 py-2 text-right">{row.quantity}</td><td className={"border-b border-white/[.045] px-2 py-2 text-right " + (row.price > 2500 ? "font-bold text-[#ff5d8f]" : "text-[#ffb43d]")}>{money(row.price)}</td>
               </tr>)}
             </tbody>
           </table>
