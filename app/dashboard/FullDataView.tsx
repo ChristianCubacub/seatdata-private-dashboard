@@ -236,7 +236,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
         };
       });
   }, [filtered]);
-  const [rowRangeMetric, setRowRangeMetric] = useState<"min" | "median" | "average">("median");
+  const [rowRangeMetric, setRowRangeMetric] = useState<"min" | "median" | "average">("min");
   const rowRangeMetricKey = rowRangeMetric === "min" ? "minPrice" : rowRangeMetric === "average" ? "averagePrice" : "medianPrice";
   const rowRangeMetricLabel = rowRangeMetric === "min" ? "Minimum" : rowRangeMetric === "average" ? "Average" : "Median";
   const maxRowRangeSales = Math.max(1, ...rowRangeStats.map((entry) => entry.sales));
