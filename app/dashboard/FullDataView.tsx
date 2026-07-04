@@ -394,7 +394,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
         <Panel title="Price distribution" hint="per ticket · threshold and stat markers" controls={<Segments values={["bars", "cdf"] as const} value={histMode} onChange={setHistMode} labels={{ bars: "Bars", cdf: "Cumulative" }} />}>
           {(maximized) => (
             <>
-              <div className="mt-3"><Segments values={[50, 100, 250, "auto"] as const} value={binSize} onChange={setBinSize} labels={{ 50: "$50", 100: "$100", 250: "$250", auto: "Auto" }} /></div>
+              <div className="mt-3" data-export-ignore="true"><Segments values={[50, 100, 250, "auto"] as const} value={binSize} onChange={setBinSize} labels={{ 50: "$50", 100: "$100", 250: "$250", auto: "Auto" }} /></div>
               <div className={maximized ? "mt-2 h-[65vh]" : "mt-2 h-[300px]"}>
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={histogram}>
@@ -429,7 +429,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                 </div>
               )}
               {showThreshold && <label className={`mt-2 block font-mono text-[#9c96b3] ${maximized ? "text-sm" : "text-[10px]"}`}>Threshold: {money(threshold)}<input type="range" min="0" max={Math.max(500, Math.ceil(Math.max(0, ...filtered.map((row) => row.price)) / 100) * 100)} step="50" value={threshold} onChange={(event) => setThreshold(Number(event.target.value))} className="mt-1 w-full accent-[#ff5d8f]" /></label>}
-              <div className="mt-3 flex flex-wrap gap-4">
+              <div className="mt-3 flex flex-wrap gap-4" data-export-ignore="true">
                 <Toggle checked={showThreshold} onChange={setShowThreshold} label="Threshold line" />
                 <Toggle checked={byZone} onChange={setByZone} label="Color by zone" />
                 <Toggle checked={showStats} onChange={setShowStats} label="Stat markers" />
@@ -445,26 +445,26 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
             <p className={`mt-1 text-[#9c96b3] ${maximized ? "text-sm" : "text-[11px]"}`}>Independent of the top filters. Filter by zone, section, row, quantity, or price.</p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <label className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Zone</span>
+                <span className={`font-bold uppercase tracking-[.14em] text-[#9c96b3] ${maximized ? "text-sm" : "text-[10px]"}`}>Zone</span>
                 <input value={searchZone} onChange={(event) => setSearchZone(event.target.value)} placeholder="Zone" className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Section</span>
+                <span className={`font-bold uppercase tracking-[.14em] text-[#9c96b3] ${maximized ? "text-sm" : "text-[10px]"}`}>Section</span>
                 <input value={searchSection} onChange={(event) => setSearchSection(event.target.value)} placeholder="Section" className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Row</span>
+                <span className={`font-bold uppercase tracking-[.14em] text-[#9c96b3] ${maximized ? "text-sm" : "text-[10px]"}`}>Row</span>
                 <input value={searchRow} onChange={(event) => setSearchRow(event.target.value)} placeholder="Row" className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
               </label>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Quantity</span>
+                <span className={`font-bold uppercase tracking-[.14em] text-[#9c96b3] ${maximized ? "text-sm" : "text-[10px]"}`}>Quantity</span>
                 <div className="flex gap-2">
                   <input value={minQuantity} onChange={(event) => setMinQuantity(event.target.value)} type="number" placeholder="Min" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
                   <input value={maxQuantity} onChange={(event) => setMaxQuantity(event.target.value)} type="number" placeholder="Max" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Price</span>
+                <span className={`font-bold uppercase tracking-[.14em] text-[#9c96b3] ${maximized ? "text-sm" : "text-[10px]"}`}>Price</span>
                 <div className="flex gap-2">
                   <input value={minPrice} onChange={(event) => setMinPrice(event.target.value)} type="number" placeholder="Min" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
                   <input value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} type="number" placeholder="Max" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
@@ -500,17 +500,21 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
       </Panel>
 
       <Panel title="Price change" hint={"rolling window vs prior period · anchored to " + (trendAsOf || inputDate(maxTime))} controls={<Segments values={["pct", "usd"] as const} value={trendMode} onChange={setTrendMode} labels={{ pct: "%", usd: "$" }} />}>
-        <div className="mt-3 flex flex-wrap items-center gap-4">
-          <label className="flex items-center gap-2 text-xs text-[#9c96b3]">As of<input type="date" value={trendAsOf} max={inputDate(maxTime)} onChange={(event) => setTrendAsOf(event.target.value)} className="rounded-lg border border-white/10 bg-[#221d3a] px-2 py-1.5 [color-scheme:dark]" /></label>
-          <label className="flex items-center gap-2 text-xs text-[#9c96b3]">Custom window<input type="number" min="1" max="3650" value={customWindow} onChange={(event) => setCustomWindow(Math.max(1, Number(event.target.value) || 1))} className="w-20 rounded-lg border border-white/10 bg-[#221d3a] px-2 py-1.5" />days</label>
-          <Toggle checked={trendRespectWindow} onChange={setTrendRespectWindow} label="Respect Window filter" />
-        </div>
-        <div className="mt-4 overflow-auto">
-          <table className="w-full min-w-[650px] border-collapse text-xs">
-            <thead><tr className="text-[10px] uppercase tracking-[.1em] text-[#9c96b3]"><th className="border-b border-white/10 px-3 py-2 text-left">Metric</th>{trendRows[0]?.values.map((value, index) => <th key={index} className="border-b border-white/10 px-3 py-2 text-center">{value.days}d</th>)}</tr></thead>
-            <tbody>{trendRows.map((metric) => <tr key={metric.kind}><td className="border-b border-white/[.045] px-3 py-3 font-semibold">{metric.label}</td>{metric.values.map((value, index) => <td key={index} title={value.available ? money(value.before) + " → " + money(value.now) : "Not enough data in both periods"} className="border-b border-white/[.045] px-3 py-3 text-center font-mono font-bold">{value.available ? <span className={value.delta > 0 ? "text-[#ff5d8f]" : value.delta < 0 ? "text-[#4dd6c4]" : "text-[#9c96b3]"}>{value.delta > 0 ? "▲ " : value.delta < 0 ? "▼ " : ""}{trendMode === "pct" ? Math.abs(value.delta).toFixed(1) + "%" : money(Math.abs(value.delta))}</span> : <span className="font-normal text-[#5f5972]">—</span>}</td>)}</tr>)}</tbody>
-          </table>
-        </div>
+        {(maximized) => (
+          <>
+            <div className={`mt-3 flex flex-wrap items-center gap-4 ${maximized ? "text-base" : "text-xs"}`}>
+              <label className="flex items-center gap-2 text-[#9c96b3]">As of<input type="date" value={trendAsOf} max={inputDate(maxTime)} onChange={(event) => setTrendAsOf(event.target.value)} className="rounded-lg border border-white/10 bg-[#221d3a] px-2 py-1.5 [color-scheme:dark]" /></label>
+              <label className="flex items-center gap-2 text-[#9c96b3]">Custom window<input type="number" min="1" max="3650" value={customWindow} onChange={(event) => setCustomWindow(Math.max(1, Number(event.target.value) || 1))} className="w-20 rounded-lg border border-white/10 bg-[#221d3a] px-2 py-1.5" />days</label>
+              <Toggle checked={trendRespectWindow} onChange={setTrendRespectWindow} label="Respect Window filter" />
+            </div>
+            <div className="mt-4 overflow-auto">
+              <table className={`w-full min-w-[650px] border-collapse ${maximized ? "text-lg" : "text-xs"}`}>
+                <thead><tr className={`uppercase tracking-[.1em] text-[#9c96b3] ${maximized ? "text-base" : "text-[10px]"}`}><th className="border-b border-white/10 px-3 py-2 text-left">Metric</th>{trendRows[0]?.values.map((value, index) => <th key={index} className="border-b border-white/10 px-3 py-2 text-center">{value.days}d</th>)}</tr></thead>
+                <tbody>{trendRows.map((metric) => <tr key={metric.kind}><td className="border-b border-white/[.045] px-3 py-3 font-semibold">{metric.label}</td>{metric.values.map((value, index) => <td key={index} title={value.available ? money(value.before) + " → " + money(value.now) : "Not enough data in both periods"} className="border-b border-white/[.045] px-3 py-3 text-center font-mono font-bold">{value.available ? <span className={value.delta > 0 ? "text-[#ff5d8f]" : value.delta < 0 ? "text-[#4dd6c4]" : "text-[#9c96b3]"}>{value.delta > 0 ? "▲ " : value.delta < 0 ? "▼ " : ""}{trendMode === "pct" ? Math.abs(value.delta).toFixed(1) + "%" : money(Math.abs(value.delta))}</span> : <span className="font-normal text-[#5f5972]">—</span>}</td>)}</tr>)}</tbody>
+              </table>
+            </div>
+          </>
+        )}
       </Panel>
 
       <footer className="pt-3 text-center font-mono text-[10px] leading-6 text-[#9c96b3]">

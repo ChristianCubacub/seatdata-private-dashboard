@@ -56,7 +56,7 @@ export default function Panel({
       if (controlsBlock) { controlsBlock.style.width = "100%"; controlsBlock.style.justifyContent = "flex-end"; }
 
       const watermark = document.createElement("p");
-      watermark.textContent = "Graphic by coxchristian • Data provided by SeatData.io";
+      watermark.textContent = "Graphic by ccxchristian • Data provided by SeatData.io";
       watermark.style.cssText = "margin-top:1rem;text-align:center;font-family:ui-monospace,monospace;font-size:11px;color:#9c96b3;";
       clone.appendChild(watermark);
 
@@ -99,7 +99,7 @@ export default function Panel({
           {hint && <p className={`mt-1 text-[#9c96b3] ${maximized ? "text-sm" : "text-[11px]"}`}>{hint}</p>}
         </div>
         <div data-panel-controls className={`flex flex-wrap items-center gap-2 ${maximized ? "w-full justify-end" : ""}`}>
-          {controls}
+          {controls && <div className="contents" data-export-ignore="true">{controls}</div>}
           <div className="flex items-center gap-2" data-export-ignore="true">
             <button
               onClick={downloadPng}
