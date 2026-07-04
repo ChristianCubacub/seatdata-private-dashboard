@@ -428,24 +428,19 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
           hint={sectionLimit === "all" ? "all sections · sum of tickets sold" : `top ${sectionLimit} sections · sum of tickets sold`}
           controls={<Segments values={[10, 15, 20, 30, "all"] as const} value={sectionLimit} onChange={setSectionLimit} labels={{ 10: "Top 10", 15: "Top 15", 20: "Top 20", 30: "Top 30", all: "All" }} />}
         >
-          {(maximized) => {
-            const rowHeight = maximized ? 34 : 26;
-            const minHeight = maximized ? 420 : 320;
-            const chartHeight = Math.max(minHeight, sectionStats.length * rowHeight);
-            return (
-              <div className="mt-4" style={{ height: `${chartHeight}px` }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={sectionStats} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
-                    <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
-                    <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={number} />
-                    <YAxis type="category" dataKey="section" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-                    <Bar dataKey="quantity" name="Tickets sold" fill={C.violet} radius={[0, 4, 4, 0]} activeBar={false} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            );
-          }}
+          {(maximized) => (
+            <div className={maximized ? "mt-4 h-[70vh]" : "mt-4 h-[320px]"}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={sectionStats} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
+                  <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
+                  <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={number} />
+                  <YAxis type="category" dataKey="section" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
+                  <Bar dataKey="quantity" name="Tickets sold" fill={C.violet} radius={[0, 4, 4, 0]} activeBar={false} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </Panel>
 
         <Panel title="Price distribution" hint="per ticket · threshold and stat markers" controls={<Segments values={["bars", "cdf"] as const} value={histMode} onChange={setHistMode} labels={{ bars: "Bars", cdf: "Cumulative" }} />}>
