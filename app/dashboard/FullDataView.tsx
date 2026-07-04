@@ -329,7 +329,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
 
       <div className="grid gap-4 lg:grid-cols-[1.62fr_1fr]">
         <Panel title="Recent sales" hint="follows the Window filter · click a header to sort" controls={<Segments values={[1, 3, 14, 30, 90, 180, "all"] as const} value={windowValue} onChange={setWindowValue} labels={{ 1: "1d", 3: "3d", 14: "14d", 30: "30d", 90: "3mo", 180: "6mo", all: "All" }} />}>
-          <div className="mt-4 max-h-[440px] overflow-auto">
+          <div className="mt-4 hidden max-h-[440px] overflow-auto sm:block">
             <table className="w-full border-collapse text-left text-xs">
               <thead className="sticky top-0 z-10 bg-[#1b1830]">
                 <tr>{(["timestamp", "zone", "section", "row", "quantity", "price"] as SortKey[]).map((key) => <th key={key} onClick={() => toggleSort(key)} className="cursor-pointer border-b border-white/10 px-2 py-2 text-[10px] uppercase tracking-[.1em] text-[#9c96b3] hover:text-white">{key === "timestamp" ? "When" : key === "section" ? "Sec" : key === "quantity" ? "Qty" : key}<span className="ml-1 opacity-50">{recentSort.key === key ? recentSort.direction === 1 ? "▲" : "▼" : ""}</span></th>)}</tr>
@@ -343,6 +343,21 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
                 </tr>)}
               </tbody>
             </table>
+          </div>
+          <div className="mt-4 max-h-[440px] space-y-2 overflow-auto sm:hidden">
+            {recentRows.slice(0, 250).map((row, index) => (
+              <div key={row.timestamp + "-card-" + index} className="rounded-lg border border-white/10 bg-[#15111f] px-3 py-2.5 font-mono text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[#9c96b3]">{displayTime(row.timestamp)}</span>
+                  <span className="font-bold text-[#ffb43d]">{money(row.price)}</span>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#9c96b3]">
+                  <span className="rounded-full bg-[#221d3a] px-2 py-1 font-sans text-[10px] text-[#b06cff]">{row.zone}</span>
+                  <span>Sec {row.section} · Row {row.row}</span>
+                  <span>Qty {row.quantity}</span>
+                </div>
+              </div>
+            ))}
           </div>
           <p className="mt-3 font-mono text-[10px] text-[#9c96b3]">Showing {number(Math.min(250, recentRows.length))} of {number(recentRows.length)} matching raw rows.</p>
         </Panel>
@@ -381,7 +396,7 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
           <input value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} type="number" placeholder="Max $" className="w-28 rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
           <button onClick={() => { setSearch(""); setMinPrice(""); setMaxPrice(""); }} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9c96b3] hover:border-[#ffb43d] hover:text-white">Clear</button>
         </div>
-        <div className="mt-3 max-h-[520px] overflow-auto border-t border-white/10">
+        <div className="mt-3 hidden max-h-[520px] overflow-auto border-t border-white/10 sm:block">
           <table className="w-full border-collapse text-left text-xs">
             <thead className="sticky top-0 z-10 bg-[#1b1830]">
               <tr>{(["timestamp", "zone", "section", "row", "quantity", "price"] as SortKey[]).map((key) => <th key={key} onClick={() => toggleSort(key, true)} className="cursor-pointer border-b border-white/10 px-2 py-2 text-[10px] uppercase tracking-[.1em] text-[#9c96b3] hover:text-white">{key === "timestamp" ? "When" : key === "section" ? "Sec" : key === "quantity" ? "Qty" : key}<span className="ml-1 opacity-50">{explorerSort.key === key ? explorerSort.direction === 1 ? "▲" : "▼" : ""}</span></th>)}</tr>
@@ -395,6 +410,21 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
               </tr>)}
             </tbody>
           </table>
+        </div>
+        <div className="mt-3 max-h-[520px] space-y-2 overflow-auto border-t border-white/10 pt-3 sm:hidden">
+          {explorerRows.slice(0, 500).map((row, index) => (
+            <div key={row.timestamp + "-explorer-card-" + index} className="rounded-lg border border-white/10 bg-[#15111f] px-3 py-2.5 font-mono text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[#9c96b3]">{displayTime(row.timestamp)}</span>
+                <span className={"font-bold " + (row.price > 2500 ? "text-[#ff5d8f]" : "text-[#ffb43d]")}>{money(row.price)}</span>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[#9c96b3]">
+                <span className="rounded-full bg-[#221d3a] px-2 py-1 font-sans text-[10px] text-[#b06cff]">{row.zone}</span>
+                <span>Sec {row.section} · Row {row.row}</span>
+                <span>Qty {row.quantity}</span>
+              </div>
+            </div>
+          ))}
         </div>
         {explorerRows.length > 500 && <p className="mt-3 font-mono text-[10px] text-[#9c96b3]">Showing the first 500 sorted rows. Narrow the search to inspect more.</p>}
       </Panel>
