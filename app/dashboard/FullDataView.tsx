@@ -240,6 +240,22 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
   const rowRangeMetricKey = rowRangeMetric === "min" ? "minPrice" : rowRangeMetric === "average" ? "averagePrice" : "medianPrice";
   const rowRangeMetricLabel = rowRangeMetric === "min" ? "Minimum" : rowRangeMetric === "average" ? "Average" : "Median";
   const maxRowRangeSales = Math.max(1, ...rowRangeStats.map((entry) => entry.sales));
+  const [rowRangeByZone, setRowRangeByZone] = useState(false);
+  const rowRangeHistogram = useMemo(() => {
+    const order = [...ROW_RANGE_BUCKETS.map((bucket) => bucket.label), UNPARSED_ROW_LABEL];
+    const bucketMap = new Map<string, { range: string; total: number; [zone: string]: string | number }>(
+      order.map((label) => [label, { range: label, total: 0 }])
+    );
+    for (const row of filtered) {
+      const label = rowRangeLabel(row.row);
+      const bucket = bucketMap.get(label);
+      if (!bucket) continue;
+      bucket.total = Number(bucket.total) + 1;
+      bucket[row.zone] = Number(bucket[row.zone] ?? 0) + 1;
+    }
+    return order.filter((label) => Number(bucketMap.get(label)!.total) > 0).map((label) => bucketMap.get(label)!);
+  }, [filtered]);
+  const rowRangeChartData: Record<string, string | number>[] = rowRangeByZone ? rowRangeHistogram : rowRangeStats;
 
   const [zoneMetric, setZoneMetric] = useState<"min" | "median" | "average">("median");
   const zoneMetricKey = zoneMetric === "min" ? "minPrice" : zoneMetric === "average" ? "averagePrice" : "medianPrice";
@@ -548,25 +564,48 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
 
       <Panel
         title="Price by row range"
-        hint={`length = ${rowRangeMetricLabel.toLowerCase()} · shade = sales volume · any section, pooled by row position`}
-        controls={<Segments values={["min", "median", "average"] as const} value={rowRangeMetric} onChange={setRowRangeMetric} labels={{ min: "Min", median: "Median", average: "Average" }} />}
+        hint={rowRangeByZone
+          ? "sales count by zone · any section, pooled by row position"
+          : `length = ${rowRangeMetricLabel.toLowerCase()} · shade = sales volume · any section, pooled by row position`}
+        controls={rowRangeByZone ? undefined : <Segments values={["min", "median", "average"] as const} value={rowRangeMetric} onChange={setRowRangeMetric} labels={{ min: "Min", median: "Median", average: "Average" }} />}
       >
         {(maximized) => (
-          <div className={maximized ? "mt-4 h-[70vh]" : "mt-4 h-[320px]"}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={rowRangeStats} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
-                <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
-                <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
-                <YAxis type="category" dataKey="range" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-                <Bar dataKey={rowRangeMetricKey} name={`${rowRangeMetricLabel} price`} radius={[0, 4, 4, 0]} activeBar={false}>
-                  {rowRangeStats.map((entry) => (
-                    <Cell key={entry.range} fill={C.teal} fillOpacity={0.35 + 0.55 * (entry.sales / maxRowRangeSales)} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <>
+            <div className={maximized ? "mt-4 h-[70vh]" : "mt-4 h-[320px]"}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={rowRangeChartData} layout="vertical" margin={{ left: 6, right: maximized ? 64 : 40 }}>
+                  <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
+                  <XAxis type="number" tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} tickFormatter={rowRangeByZone ? number : (value) => `$${number(value)}`} />
+                  <YAxis type="category" dataKey="range" width={maximized ? 130 : 92} tick={axisTick(maximized, 10)} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={tooltipStyle(maximized)} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
+                  {rowRangeByZone ? (
+                    allZones.map((zone, index) => (
+                      <Bar key={zone} dataKey={zone} name={zone} stackId="zones" fill={zColor(zone, index)} activeBar={false} />
+                    ))
+                  ) : (
+                    <Bar dataKey={rowRangeMetricKey} name={`${rowRangeMetricLabel} price`} radius={[0, 4, 4, 0]} activeBar={false}>
+                      {rowRangeStats.map((entry) => (
+                        <Cell key={entry.range} fill={C.teal} fillOpacity={0.35 + 0.55 * (entry.sales / maxRowRangeSales)} />
+                      ))}
+                    </Bar>
+                  )}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {rowRangeByZone && histogramZones.length > 0 && (
+              <div className={`mt-2 flex flex-wrap gap-2 font-mono ${maximized ? "text-sm" : "text-[10px]"}`}>
+                {histogramZones.map((entry) => (
+                  <span key={entry.zone} className="rounded-md border border-white/10 px-2 py-1">
+                    <i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style={{ background: entry.color }} />
+                    {entry.zone} ({number(entry.sales)})
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="mt-3 flex flex-wrap gap-4">
+              <Toggle checked={rowRangeByZone} onChange={setRowRangeByZone} label="Color by zone" />
+            </div>
+          </>
         )}
       </Panel>
 
