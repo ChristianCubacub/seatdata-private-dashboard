@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { flushSync } from "react-dom";
 
 const DEFAULT_CLASSNAME =
   "min-w-0 rounded-[14px] border border-white/10 bg-[#1b1830] p-4 shadow-[0_18px_50px_rgba(0,0,0,.15)] sm:p-[18px]";
@@ -19,11 +20,12 @@ export default function Panel({
   title: string;
   hint?: string;
   controls?: ReactNode;
-  children: ReactNode;
+  children: ReactNode | ((maximized: boolean) => ReactNode);
   className?: string;
 }) {
   const [maximized, setMaximized] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const nodeRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -42,6 +44,7 @@ export default function Panel({
   async function downloadPng() {
     if (!nodeRef.current || downloading) return;
     setDownloading(true);
+    flushSync(() => setExporting(true));
     try {
       const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(nodeRef.current, {
@@ -56,13 +59,14 @@ export default function Panel({
     } catch (error) {
       console.error(error);
     } finally {
+      flushSync(() => setExporting(false));
       setDownloading(false);
     }
   }
 
   return (
     <section ref={nodeRef} className={maximized ? "fixed inset-0 z-[999] overflow-auto bg-[#12101c] p-6 sm:p-10" : className}>
-      <div className="flex flex-wrap items-start justify-between gap-2">
+      <div className={`flex gap-2 ${exporting ? "flex-col items-center text-center" : "flex-wrap items-start justify-between"}`}>
         <div>
           <h2
             onClick={() => setMaximized((current) => !current)}
@@ -73,7 +77,7 @@ export default function Panel({
           </h2>
           {hint && <p className="mt-1 text-[11px] text-[#9c96b3]">{hint}</p>}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={`flex flex-wrap items-center gap-2 ${exporting ? "justify-center" : ""}`}>
           {controls}
           <div className="flex items-center gap-2" data-export-ignore="true">
             <button
@@ -95,7 +99,7 @@ export default function Panel({
           </div>
         </div>
       </div>
-      {children}
+      {typeof children === "function" ? children(maximized) : children}
     </section>
   );
 }

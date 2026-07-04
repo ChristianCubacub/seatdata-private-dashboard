@@ -326,158 +326,176 @@ export default function FullDataView({ rawSales }: { rawSales: SeatDataSale[] })
 
       <div className="grid gap-4 lg:grid-cols-[1.62fr_1fr]">
         <Panel title="Historical sales data" hint="bars: tickets sold · lines: median & cheapest get-in" controls={<Segments values={["day", "week", "month"] as const} value={granularity} onChange={setGranularity} labels={{ day: "Day", week: "Week", month: "Month" }} />}>
-          <div className="mt-4 h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={timeSeries}>
-                <CartesianGrid stroke="rgba(255,255,255,.055)" vertical={false} />
-                <XAxis dataKey="date" tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={{ stroke: "rgba(255,255,255,.09)" }} minTickGap={24} />
-                <YAxis yAxisId="sales" tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} />
-                <YAxis yAxisId="price" orientation="right" tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
-                <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-                {series.tickets && <Bar yAxisId="sales" dataKey="ticketsSold" name="Tickets sold" fill={C.violet} radius={[3, 3, 0, 0]} />}
-                {series.median && <Line yAxisId="price" type="linear" dataKey="medianPrice" name="Median price" stroke={C.teal} strokeWidth={2.4} dot={false} />}
-                {series.getIn && <Line yAxisId="price" type="linear" dataKey="getInPrice" name="Get-in price" stroke={C.amber} strokeWidth={2.4} dot={false} />}
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2 font-mono text-[10px]">
-            {(["tickets", "median", "getIn"] as const).map((key, index) => <button key={key} onClick={() => setSeries((current) => ({ ...current, [key]: !current[key] }))} className={`rounded-md border px-2 py-1 ${series[key] ? "border-white/10 text-white" : "border-transparent text-[#5f5972]"}`}><i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style={{ background: [C.violet, C.teal, C.amber][index] }} />{key === "tickets" ? "Tickets sold" : key === "median" ? "Median $/tix" : "Get-in $/tix"}</button>)}
-          </div>
+          {(maximized) => (
+            <>
+              <div className={maximized ? "mt-4 h-[70vh]" : "mt-4 h-[320px]"}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={timeSeries}>
+                    <CartesianGrid stroke="rgba(255,255,255,.055)" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={{ stroke: "rgba(255,255,255,.09)" }} minTickGap={24} />
+                    <YAxis yAxisId="sales" tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} />
+                    <YAxis yAxisId="price" orientation="right" tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
+                    <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
+                    {series.tickets && <Bar yAxisId="sales" dataKey="ticketsSold" name="Tickets sold" fill={C.violet} radius={[3, 3, 0, 0]} />}
+                    {series.median && <Line yAxisId="price" type="linear" dataKey="medianPrice" name="Median price" stroke={C.teal} strokeWidth={2.4} dot={false} />}
+                    {series.getIn && <Line yAxisId="price" type="linear" dataKey="getInPrice" name="Get-in price" stroke={C.amber} strokeWidth={2.4} dot={false} />}
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2 font-mono text-[10px]">
+                {(["tickets", "median", "getIn"] as const).map((key, index) => <button key={key} onClick={() => setSeries((current) => ({ ...current, [key]: !current[key] }))} className={`rounded-md border px-2 py-1 ${series[key] ? "border-white/10 text-white" : "border-transparent text-[#5f5972]"}`}><i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style={{ background: [C.violet, C.teal, C.amber][index] }} />{key === "tickets" ? "Tickets sold" : key === "median" ? "Median $/tix" : "Get-in $/tix"}</button>)}
+              </div>
+            </>
+          )}
         </Panel>
 
         <Panel title="Median price by zone" hint="length = median · shade = sales volume">
-          <div className="mt-4 h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={zoneStats.slice(0, 12)} layout="vertical" margin={{ left: 6, right: 18 }}>
-                <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
-                <XAxis type="number" tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
-                <YAxis type="category" dataKey="zone" width={92} tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-                <Bar dataKey="medianPrice" name="Median price" fill={C.amber} radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {(maximized) => (
+            <div className={maximized ? "mt-4 h-[70vh]" : "mt-4 h-[320px]"}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={zoneStats.slice(0, 12)} layout="vertical" margin={{ left: 6, right: 18 }}>
+                  <CartesianGrid stroke="rgba(255,255,255,.055)" horizontal={false} />
+                  <XAxis type="number" tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(value) => `$${number(value)}`} />
+                  <YAxis type="category" dataKey="zone" width={92} tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
+                  <Bar dataKey="medianPrice" name="Median price" fill={C.amber} radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </Panel>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.62fr_1fr]">
         <Panel title="Recent sales" hint="follows the Window filter · click a header to sort" controls={<Segments values={[1, 3, 14, 30, 90, 180, "all"] as const} value={windowValue} onChange={setWindowValue} labels={{ 1: "1d", 3: "3d", 14: "14d", 30: "30d", 90: "3mo", 180: "6mo", all: "All" }} />}>
-          <div className="mt-4 max-h-[440px] overflow-auto">
-            <table className="w-full border-collapse text-left text-xs">
-              <thead className="sticky top-0 z-10 bg-[#1b1830]">
-                <tr>{(["timestamp", "zone", "section", "row", "quantity", "price"] as SortKey[]).map((key) => <th key={key} onClick={() => toggleSort(key)} className="cursor-pointer border-b border-white/10 px-2 py-2 text-[10px] uppercase tracking-[.1em] text-[#9c96b3] hover:text-white">{key === "timestamp" ? "When" : key === "section" ? "Sec" : key === "quantity" ? "Qty" : key}<span className="ml-1 opacity-50">{recentSort.key === key ? recentSort.direction === 1 ? "▲" : "▼" : ""}</span></th>)}</tr>
-              </thead>
-              <tbody className="font-mono">
-                {recentRows.slice(0, 250).map((row, index) => <tr key={row.timestamp + "-" + index} className="hover:bg-white/[.03]">
-                  <td className="whitespace-nowrap border-b border-white/[.045] px-2 py-2">{displayTime(row.timestamp)}</td>
-                  <td className="border-b border-white/[.045] px-2 py-2"><span className="rounded-full bg-[#221d3a] px-2 py-1 font-sans text-[10px] text-[#b06cff]">{row.zone}</span></td>
-                  <td className="border-b border-white/[.045] px-2 py-2">{row.section}</td><td className="border-b border-white/[.045] px-2 py-2">{row.row}</td>
-                  <td className="border-b border-white/[.045] px-2 py-2 text-right">{row.quantity}</td><td className="border-b border-white/[.045] px-2 py-2 text-right text-[#ffb43d]">{money(row.price)}</td>
-                </tr>)}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-3 font-mono text-[10px] text-[#9c96b3]">Showing {number(Math.min(250, recentRows.length))} of {number(recentRows.length)} matching raw rows.</p>
+          {(maximized) => (
+            <>
+              <div className={maximized ? "mt-4 max-h-[75vh] overflow-auto" : "mt-4 max-h-[440px] overflow-auto"}>
+                <table className="w-full border-collapse text-left text-xs">
+                  <thead className="sticky top-0 z-10 bg-[#1b1830]">
+                    <tr>{(["timestamp", "zone", "section", "row", "quantity", "price"] as SortKey[]).map((key) => <th key={key} onClick={() => toggleSort(key)} className="cursor-pointer border-b border-white/10 px-2 py-2 text-[10px] uppercase tracking-[.1em] text-[#9c96b3] hover:text-white">{key === "timestamp" ? "When" : key === "section" ? "Sec" : key === "quantity" ? "Qty" : key}<span className="ml-1 opacity-50">{recentSort.key === key ? recentSort.direction === 1 ? "▲" : "▼" : ""}</span></th>)}</tr>
+                  </thead>
+                  <tbody className="font-mono">
+                    {recentRows.slice(0, 250).map((row, index) => <tr key={row.timestamp + "-" + index} className="hover:bg-white/[.03]">
+                      <td className="whitespace-nowrap border-b border-white/[.045] px-2 py-2">{displayTime(row.timestamp)}</td>
+                      <td className="border-b border-white/[.045] px-2 py-2"><span className="rounded-full bg-[#221d3a] px-2 py-1 font-sans text-[10px] text-[#b06cff]">{row.zone}</span></td>
+                      <td className="border-b border-white/[.045] px-2 py-2">{row.section}</td><td className="border-b border-white/[.045] px-2 py-2">{row.row}</td>
+                      <td className="border-b border-white/[.045] px-2 py-2 text-right">{row.quantity}</td><td className="border-b border-white/[.045] px-2 py-2 text-right text-[#ffb43d]">{money(row.price)}</td>
+                    </tr>)}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-3 font-mono text-[10px] text-[#9c96b3]">Showing {number(Math.min(250, recentRows.length))} of {number(recentRows.length)} matching raw rows.</p>
+            </>
+          )}
         </Panel>
 
         <Panel title="Price distribution" hint="per ticket · threshold and stat markers" controls={<Segments values={["bars", "cdf"] as const} value={histMode} onChange={setHistMode} labels={{ bars: "Bars", cdf: "Cumulative" }} />}>
-          <div className="mt-3"><Segments values={[50, 100, 250, "auto"] as const} value={binSize} onChange={setBinSize} labels={{ 50: "$50", 100: "$100", 250: "$250", auto: "Auto" }} /></div>
-          <div className="mt-2 h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={histogram}>
-                <CartesianGrid stroke="rgba(255,255,255,.055)" vertical={false} />
-                <XAxis dataKey="bucket" tick={{ fill: C.muted, fontSize: 9 }} tickLine={false} axisLine={{ stroke: "rgba(255,255,255,.09)" }} minTickGap={18} />
-                <YAxis domain={histMode === "cdf" ? [0, 100] : undefined} tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(value) => histMode === "cdf" ? value + "%" : String(value)} />
-                <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
-                {histMode === "bars" && (byZone
-                  ? (isolatedZone ? [isolatedZone] : allZones).map((zone) => (
-                      <Bar key={zone} dataKey={zone} name={zone} stackId="zones" fill={zColor(zone, allZones.indexOf(zone))} />
-                    ))
-                  : <Bar dataKey="total" name="Sales rows" fill={C.violet} radius={[3, 3, 0, 0]} />)}
-                {histMode === "cdf" && <Line type="monotone" dataKey="cumulative" name="At or below" stroke={C.teal} strokeWidth={2.5} dot={false} />}
-                {showThreshold && thresholdBucket && <ReferenceLine x={thresholdBucket.bucket} stroke={C.hot} strokeDasharray="4 3" label={{ value: money(threshold), fill: C.hot, fontSize: 10 }} />}
-                {showStats && statisticBuckets.average && <ReferenceLine x={statisticBuckets.average} stroke={C.violet} strokeDasharray="3 3" />}
-                {showStats && statisticBuckets.median && <ReferenceLine x={statisticBuckets.median} stroke={C.amber} strokeDasharray="3 3" />}
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-          {histMode === "bars" && byZone && histogramZones.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2 font-mono text-[10px]">
-              {histogramZones.map((entry) => (
-                <button
-                  key={entry.zone}
-                  onClick={() => toggleIsolateZone(entry.zone)}
-                  className={`rounded-md border px-2 py-1 transition ${isolatedZone && isolatedZone !== entry.zone ? "border-transparent text-[#5f5972]" : "border-white/10 text-white"}`}
-                >
-                  <i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style={{ background: entry.color }} />
-                  {entry.zone} ({number(entry.sales)})
-                </button>
-              ))}
-            </div>
+          {(maximized) => (
+            <>
+              <div className="mt-3"><Segments values={[50, 100, 250, "auto"] as const} value={binSize} onChange={setBinSize} labels={{ 50: "$50", 100: "$100", 250: "$250", auto: "Auto" }} /></div>
+              <div className={maximized ? "mt-2 h-[65vh]" : "mt-2 h-[300px]"}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={histogram}>
+                    <CartesianGrid stroke="rgba(255,255,255,.055)" vertical={false} />
+                    <XAxis dataKey="bucket" tick={{ fill: C.muted, fontSize: 9 }} tickLine={false} axisLine={{ stroke: "rgba(255,255,255,.09)" }} minTickGap={18} />
+                    <YAxis domain={histMode === "cdf" ? [0, 100] : undefined} tick={{ fill: C.muted, fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(value) => histMode === "cdf" ? value + "%" : String(value)} />
+                    <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: C.amber }} cursor={{ fill: "rgba(255,255,255,.04)" }} />
+                    {histMode === "bars" && (byZone
+                      ? (isolatedZone ? [isolatedZone] : allZones).map((zone) => (
+                          <Bar key={zone} dataKey={zone} name={zone} stackId="zones" fill={zColor(zone, allZones.indexOf(zone))} />
+                        ))
+                      : <Bar dataKey="total" name="Sales rows" fill={C.violet} radius={[3, 3, 0, 0]} />)}
+                    {histMode === "cdf" && <Line type="monotone" dataKey="cumulative" name="At or below" stroke={C.teal} strokeWidth={2.5} dot={false} />}
+                    {showThreshold && thresholdBucket && <ReferenceLine x={thresholdBucket.bucket} stroke={C.hot} strokeDasharray="4 3" label={{ value: money(threshold), fill: C.hot, fontSize: 10 }} />}
+                    {showStats && statisticBuckets.average && <ReferenceLine x={statisticBuckets.average} stroke={C.violet} strokeDasharray="3 3" />}
+                    {showStats && statisticBuckets.median && <ReferenceLine x={statisticBuckets.median} stroke={C.amber} strokeDasharray="3 3" />}
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+              {histMode === "bars" && byZone && histogramZones.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2 font-mono text-[10px]">
+                  {histogramZones.map((entry) => (
+                    <button
+                      key={entry.zone}
+                      onClick={() => toggleIsolateZone(entry.zone)}
+                      className={`rounded-md border px-2 py-1 transition ${isolatedZone && isolatedZone !== entry.zone ? "border-transparent text-[#5f5972]" : "border-white/10 text-white"}`}
+                    >
+                      <i className="mr-1 inline-block h-2.5 w-2.5 rounded-sm" style={{ background: entry.color }} />
+                      {entry.zone} ({number(entry.sales)})
+                    </button>
+                  ))}
+                </div>
+              )}
+              {showThreshold && <label className="mt-2 block font-mono text-[10px] text-[#9c96b3]">Threshold: {money(threshold)}<input type="range" min="0" max={Math.max(500, Math.ceil(Math.max(0, ...filtered.map((row) => row.price)) / 100) * 100)} step="50" value={threshold} onChange={(event) => setThreshold(Number(event.target.value))} className="mt-1 w-full accent-[#ff5d8f]" /></label>}
+              <div className="mt-3 flex flex-wrap gap-4">
+                <Toggle checked={showThreshold} onChange={setShowThreshold} label="Threshold line" />
+                <Toggle checked={byZone} onChange={setByZone} label="Color by zone" />
+                <Toggle checked={showStats} onChange={setShowStats} label="Stat markers" />
+              </div>
+            </>
           )}
-          {showThreshold && <label className="mt-2 block font-mono text-[10px] text-[#9c96b3]">Threshold: {money(threshold)}<input type="range" min="0" max={Math.max(500, Math.ceil(Math.max(0, ...filtered.map((row) => row.price)) / 100) * 100)} step="50" value={threshold} onChange={(event) => setThreshold(Number(event.target.value))} className="mt-1 w-full accent-[#ff5d8f]" /></label>}
-          <div className="mt-3 flex flex-wrap gap-4">
-            <Toggle checked={showThreshold} onChange={setShowThreshold} label="Threshold line" />
-            <Toggle checked={byZone} onChange={setByZone} label="Color by zone" />
-            <Toggle checked={showStats} onChange={setShowStats} label="Stat markers" />
-          </div>
         </Panel>
       </div>
 
       <Panel title="All entries · explorer" hint={number(explorerRows.length) + " matching raw rows"}>
-        <p className="mt-1 text-[11px] text-[#9c96b3]">Independent of the top filters. Filter by zone, section, row, quantity, or price.</p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Zone</span>
-            <input value={searchZone} onChange={(event) => setSearchZone(event.target.value)} placeholder="Zone" className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Section</span>
-            <input value={searchSection} onChange={(event) => setSearchSection(event.target.value)} placeholder="Section" className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Row</span>
-            <input value={searchRow} onChange={(event) => setSearchRow(event.target.value)} placeholder="Row" className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
-          </label>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Quantity</span>
-            <div className="flex gap-2">
-              <input value={minQuantity} onChange={(event) => setMinQuantity(event.target.value)} type="number" placeholder="Min" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
-              <input value={maxQuantity} onChange={(event) => setMaxQuantity(event.target.value)} type="number" placeholder="Max" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+        {(maximized) => (
+          <>
+            <p className="mt-1 text-[11px] text-[#9c96b3]">Independent of the top filters. Filter by zone, section, row, quantity, or price.</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Zone</span>
+                <input value={searchZone} onChange={(event) => setSearchZone(event.target.value)} placeholder="Zone" className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Section</span>
+                <input value={searchSection} onChange={(event) => setSearchSection(event.target.value)} placeholder="Section" className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Row</span>
+                <input value={searchRow} onChange={(event) => setSearchRow(event.target.value)} placeholder="Row" className="rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+              </label>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Quantity</span>
+                <div className="flex gap-2">
+                  <input value={minQuantity} onChange={(event) => setMinQuantity(event.target.value)} type="number" placeholder="Min" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+                  <input value={maxQuantity} onChange={(event) => setMaxQuantity(event.target.value)} type="number" placeholder="Max" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Price</span>
+                <div className="flex gap-2">
+                  <input value={minPrice} onChange={(event) => setMinPrice(event.target.value)} type="number" placeholder="Min" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+                  <input value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} type="number" placeholder="Max" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+                </div>
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={() => { setSearchZone(""); setSearchSection(""); setSearchRow(""); setMinQuantity(""); setMaxQuantity(""); setMinPrice(""); setMaxPrice(""); }}
+                  className="rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9c96b3] hover:border-[#ffb43d] hover:text-white"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-[#9c96b3]">Price</span>
-            <div className="flex gap-2">
-              <input value={minPrice} onChange={(event) => setMinPrice(event.target.value)} type="number" placeholder="Min" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
-              <input value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} type="number" placeholder="Max" className="w-full rounded-lg border border-white/10 bg-[#221d3a] px-3 py-2 text-sm outline-none focus:border-[#b06cff]" />
+            <div className={(maximized ? "mt-3 max-h-[65vh] overflow-auto" : "mt-3 max-h-[520px] overflow-auto") + " border-t border-white/10"}>
+              <table className="w-full border-collapse text-left text-xs">
+                <thead className="sticky top-0 z-10 bg-[#1b1830]">
+                  <tr>{(["timestamp", "zone", "section", "row", "quantity", "price"] as SortKey[]).map((key) => <th key={key} onClick={() => toggleSort(key, true)} className="cursor-pointer border-b border-white/10 px-2 py-2 text-[10px] uppercase tracking-[.1em] text-[#9c96b3] hover:text-white">{key === "timestamp" ? "When" : key === "section" ? "Sec" : key === "quantity" ? "Qty" : key}<span className="ml-1 opacity-50">{explorerSort.key === key ? explorerSort.direction === 1 ? "▲" : "▼" : ""}</span></th>)}</tr>
+                </thead>
+                <tbody className="font-mono">
+                  {explorerRows.slice(0, 500).map((row, index) => <tr key={row.timestamp + "-explorer-" + index} className="hover:bg-white/[.03]">
+                    <td className="whitespace-nowrap border-b border-white/[.045] px-2 py-2">{displayTime(row.timestamp)}</td>
+                    <td className="border-b border-white/[.045] px-2 py-2"><span className="rounded-full bg-[#221d3a] px-2 py-1 font-sans text-[10px] text-[#b06cff]">{row.zone}</span></td>
+                    <td className="border-b border-white/[.045] px-2 py-2">{row.section}</td><td className="border-b border-white/[.045] px-2 py-2">{row.row}</td>
+                    <td className="border-b border-white/[.045] px-2 py-2 text-right">{row.quantity}</td><td className={"border-b border-white/[.045] px-2 py-2 text-right " + (row.price > outlierCutoff ? "font-bold text-[#ff5d8f]" : "text-[#ffb43d]")}>{money(row.price)}</td>
+                  </tr>)}
+                </tbody>
+              </table>
             </div>
-          </div>
-          <div className="flex items-end">
-            <button
-              onClick={() => { setSearchZone(""); setSearchSection(""); setSearchRow(""); setMinQuantity(""); setMaxQuantity(""); setMinPrice(""); setMaxPrice(""); }}
-              className="rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9c96b3] hover:border-[#ffb43d] hover:text-white"
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-        <div className="mt-3 max-h-[520px] overflow-auto border-t border-white/10">
-          <table className="w-full border-collapse text-left text-xs">
-            <thead className="sticky top-0 z-10 bg-[#1b1830]">
-              <tr>{(["timestamp", "zone", "section", "row", "quantity", "price"] as SortKey[]).map((key) => <th key={key} onClick={() => toggleSort(key, true)} className="cursor-pointer border-b border-white/10 px-2 py-2 text-[10px] uppercase tracking-[.1em] text-[#9c96b3] hover:text-white">{key === "timestamp" ? "When" : key === "section" ? "Sec" : key === "quantity" ? "Qty" : key}<span className="ml-1 opacity-50">{explorerSort.key === key ? explorerSort.direction === 1 ? "▲" : "▼" : ""}</span></th>)}</tr>
-            </thead>
-            <tbody className="font-mono">
-              {explorerRows.slice(0, 500).map((row, index) => <tr key={row.timestamp + "-explorer-" + index} className="hover:bg-white/[.03]">
-                <td className="whitespace-nowrap border-b border-white/[.045] px-2 py-2">{displayTime(row.timestamp)}</td>
-                <td className="border-b border-white/[.045] px-2 py-2"><span className="rounded-full bg-[#221d3a] px-2 py-1 font-sans text-[10px] text-[#b06cff]">{row.zone}</span></td>
-                <td className="border-b border-white/[.045] px-2 py-2">{row.section}</td><td className="border-b border-white/[.045] px-2 py-2">{row.row}</td>
-                <td className="border-b border-white/[.045] px-2 py-2 text-right">{row.quantity}</td><td className={"border-b border-white/[.045] px-2 py-2 text-right " + (row.price > outlierCutoff ? "font-bold text-[#ff5d8f]" : "text-[#ffb43d]")}>{money(row.price)}</td>
-              </tr>)}
-            </tbody>
-          </table>
-        </div>
-        {explorerRows.length > 500 && <p className="mt-3 font-mono text-[10px] text-[#9c96b3]">Showing the first 500 sorted rows. Narrow the search to inspect more.</p>}
+            {explorerRows.length > 500 && <p className="mt-3 font-mono text-[10px] text-[#9c96b3]">Showing the first 500 sorted rows. Narrow the search to inspect more.</p>}
+          </>
+        )}
       </Panel>
 
       <Panel title="Price change" hint={"rolling window vs prior period · anchored to " + (trendAsOf || inputDate(maxTime))} controls={<Segments values={["pct", "usd"] as const} value={trendMode} onChange={setTrendMode} labels={{ pct: "%", usd: "$" }} />}>
